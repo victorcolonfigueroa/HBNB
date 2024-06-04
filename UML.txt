@@ -1,0 +1,40 @@
+classDiagram
+    class Place {
+        - id: string
+        - name: string
+        - address: string
+        - latitude: float
+        - longitude: float
+        - amenities: string[]
+        + addReview()
+    }
+
+    class User {
+        - id: string
+        - email: string
+        - first_name: string
+        - last_name: string
+        - password: string
+        + addReview()
+    }
+
+    class Review {
+        - id: string
+        - rating: int
+        - comment: string
+        - createdAt: Date
+        - userId: string
+        - placeId: string
+        + getPlace()
+        + getUser()
+    }
+
+    class Amenity {
+        - id: string
+        - name: string
+        - description: string
+    }
+
+    Place *-- Review
+    User *-- Review
+    Place *-- Amenity
