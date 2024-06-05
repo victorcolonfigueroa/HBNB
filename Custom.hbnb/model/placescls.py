@@ -1,14 +1,21 @@
 import uuid
-'''fix the selfname variable'''
+#add a method that vereifies this place is form only one user
 
 class Places:
-    def __init__(self, name, description, price, direction):
+    def __init__(self, name, description, price, direction, user_id):
         self.name = name
         self.description = description
         self.price = price
         self.direction = direction
         self.id = uuid.uuid4()
-#review why its not recognizing the variables
+        self.user_id = user_id
+
+    def verify_user(self, user_id):
+        if self.user_id == user_id:
+            return True
+        else:
+            return False
+
     def new_place(self, new_place):
         self.name = new_place
         print(f'Your new place has been saved to {self.new_place}')

@@ -5,10 +5,15 @@ import uuid
 
 
 class User:
+    used_emails = set()
 
     def __init__(self, name, email, password):
+        if email in User.used_emails:
+            raise ValueError("Email already in use.")
+        self.user_id = uuid.self.uuid4()
         self.name = name
         self.email = email
+        User.used_emails.add(email)
         self.password = password
         self.reviews = []
 
@@ -17,6 +22,9 @@ class User:
         print(f"New name has been saved as {self.name}")
 
     def new_email(self, new_email):
+        if new_email in User.used_emails:
+            raise ValueError("Email already in use.")
+        User.used_emails.remove(self.email)
         self.email = new_email
         print(f"New email has been saved as {self.email}")
 
