@@ -32,3 +32,9 @@ class User:
 
     def add_review(self, review):
         self.review = Reviews(review)
+
+    def print_review_text(self):
+        if hasattr(self, 'review'):
+            print(self.review.text)
+        else:
+            print("No review has been added yet.")
