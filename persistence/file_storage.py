@@ -4,61 +4,95 @@ from datetime import datetime
 import uuid
 from persistence.ipersistence_manager import IPersistenceManager
 
-
 class FileStorage(IPersistenceManager):
+    """
+    FileStorage class that implements the IPersistenceManager interface.
+    It uses a JSON file for storing and retrieving data.
+    """
+
     def __init__(self, file_path='file_storage.json'):
+        """
+        Initialize FileStorage with a file path.
+
+        :param file_path: The path to the JSON file used for storage.
+        """
         self.file_path = file_path 
         self.data = self._load_file() 
 
     def _load_file(self):
-        if os.path.exists(self.file_path): # Check if the file exists
-            with open(self.file_path, 'r') as file: # Open the file
-                return json.load(file) # Load the data from the file
-    
-        else:
-            return {"User": {}, "Place": {}, "Review": {}, "Amenity": {}, "City": {}, "Country": {}} # Dictionary to store all data
+        """
+        Load data from the JSON file.
 
+        :return: A dictionary containing the data loaded from the file.
+        """
+        if os.path.exists(self.file_path): 
+            with open(self.file_path, 'r') as file: 
+                return json.load(file) 
+        else:
+            return {"User": {}, "Place": {}, "Review": {}, "Amenity": {}, "City": {}, "Country": {}}
 
     def _save_file(self):
+        """
+        Save the data to the JSON file.
+        """
         with open(self.file_path, 'w') as file:
             json.dump(self.data, file, default=str) 
 
-
     def save(self, obj):
-        obj_class = obj.__class__.__name__ # Get the class name of the object
-        obj_id = str(obj.id) # Get the id of the object
-        self.data[obj_class][obj_id] = obj.__dict__ # Save the object in the data dictionary
-        self._save_file() # Save the data to the file
+        """
+        Save an object to the data dictionary and then to the file.
 
+        :param obj: The object to be saved.
+        """
+        obj_class = obj.__class__.__name__ 
+        obj_id = str(obj.id) 
+        self.data[obj_class][obj_id] = obj.__dict__ 
+        self._save_file() 
 
     def delete(self, obj):
+        """
+        Delete an object from the data dictionary and then from the file.
+
+        :param obj: The object to be deleted.
+        """
         obj_class = obj.__class__.__name__
         obj_id = str(obj.id)
-        if obj_id in self.data[obj_class]: # Check if the object exists
-            del self.data[obj_class][obj_id] # Delete the object from the data dictionary
+        if obj_id in self.data[obj_class]: 
+            del self.data[obj_class][obj_id] 
             self._save_file()
 
-
     def load(self, cls, obj_id):
-        obj_class = cls.__name__ # Get the class name
+        """
+        Load an object of a given class from the data dictionary using its ID.
+
+        :param cls: The class of the object to be loaded.
+        :param obj_id: The ID of the object to be loaded.
+        :return: The loaded object if found, None otherwise.
+        """
+        obj_class = cls.__name__ 
         obj_id = str(obj_id)
-        if obj_id in self.data[obj_class]: # Check if the object exists
-            obj_data = self.data[obj_class][obj_id] # Get the object data
-            obj = cls.__new__(cls) # Create a new object of the class
-            obj.__dict__.update(obj_data) # Update the object with the data
+        if obj_id in self.data[obj_class]: 
+            obj_data = self.data[obj_class][obj_id] 
+            obj = cls.__new__(cls) 
+            obj.__dict__.update(obj_data) 
             if not isinstance(obj.id, uuid.UUID):
-                obj.id = uuid.UUID(obj.id) # Convert the id to UUID
+                obj.id = uuid.UUID(obj.id) 
 
             if isinstance(obj.created_at, str):
-                obj.created_at = datetime.fromisoformat(obj.created_at)  # Convert the created_at to datetime only if it's a string
+                obj.created_at = datetime.fromisoformat(obj.created_at)
 
             if isinstance(obj.updated_at, str):
-                obj.updated_at = datetime.fromisoformat(obj.updated_at)  # Convert the updated_at to datetime only if it's a string
+                obj.updated_at = datetime.fromisoformat(obj.updated_at)
 
             return obj 
-        return None # Return None if the object does not exist
-
+        return None 
 
     def load_all(self, cls):
+        """
+        Load all objects of a given class from the data dictionary.
+
+        :param cls: The class of the objects to be loaded.
+        :return: A list of loaded objects.
+        """
         obj_class = cls.__name__
-        return [self.load(cls, obj_id) for obj_id in self.data[obj_class]] # Load all objects of the class
+        return [self.load(cls, obj_id) for obj_id in self.data[obj_class]]
