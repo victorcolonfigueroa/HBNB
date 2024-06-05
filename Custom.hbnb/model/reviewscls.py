@@ -2,9 +2,10 @@ import uuid
 
 
 class Reviews:
-    def __init__(self, text, clasification):
+    def __init__(self, text, clasification, user):
         self.text = text
         self.clasification = clasification
+        self.user = user
         self.id = uuid.uuid4()
 
     def new_review(self, new_review):

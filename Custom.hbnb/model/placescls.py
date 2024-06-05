@@ -11,19 +11,19 @@ class Places:
 #review why its not recognizing the variables
     def new_place(self, new_place):
         self.name = new_place
-    print(f'Your new place has been saved to {self.new_place}')
+        print(f'Your new place has been saved to {self.new_place}')
 
     def new_descrition(self, new_descrition):
         self.description = new_descrition
-    print(f'Description: {self.description}')
+        print(f'Description: {self.description}')
 
     def new_price(self, new_price):
         self.price = new_price
-    print(f'This will be the new price {self.price}')
+        print(f'This will be the new price {self.price}')
 
     def new_direction(self, new_direction):
         self.direction = new_direction
-    print(f'This is how to get there: {self.direction}')
+        print(f'This is how to get there: {self.direction}')
 
 class Amenities(Places):
     def __init__(self, name, description):
@@ -33,9 +33,9 @@ class Amenities(Places):
 
     def new_amenitie(self, new_amenitie):
         self.name = new_amenitie
-    print(f'This is your new amenitie{self.name}')
+        print(f'This is your new amenitie{self.name}')
 
     def new_description(self, new_desciption):
         self.description = new_desciption
-    print(f'This is your amenities description: {self.decription}')
+        print(f'This is your amenities description: {self.decription}')
 
