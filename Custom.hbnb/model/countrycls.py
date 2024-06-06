@@ -5,7 +5,6 @@ class Country:
     def __init__(self, country_name, area_code):
         self.country_name = country_name
         self.area_code = area_code
-        self.id = uuid.uuid4()
 
     def country_name(self, country_name):
         self.country_name = country_name

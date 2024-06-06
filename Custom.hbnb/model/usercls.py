@@ -20,7 +20,7 @@ class User(BaseModel):
         self.name = name
         self.__email = email
         User.used_emails.add(email)
-        self.password = password
+        self.__password = password
         self.reviews = []
 
     def to_dict(self):
@@ -41,8 +41,13 @@ class User(BaseModel):
         self.__email = new_email
         print(f"New email has been saved as {self.__email}")
 
-    def change_password(self, new_password):
-        self.password = new_password
+    @property
+    def password(self):
+        return self.__password
+
+    @password.setter
+    def password(self, new_password):
+        self.__password = new_password
         print(f'New password has been saved')
 
     def add_place(self, place_name, city_name, country_name, amenities_list):
