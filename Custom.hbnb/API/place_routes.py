@@ -1,5 +1,5 @@
 from flask import Flask, requests, jsonify
-from place import Place
+from model.placescls import Place
 import uuid
 
 app = Flask(__name__)
@@ -20,16 +20,16 @@ def update_place(place_id):
     data = requests.get_json()
     palce = Place.get(uuid.UUID(place_id))
     if 'name' in data:
-        place.name = data['name']
+        Place.place.name = data['name']
     if 'description' in data:
-        place.description = data['description']
+        Place.place.description = data['description']
     if 'prince' in data:
-        place.price = data['price']
+        Place.place.price = data['price']
     if 'direction' in data:
-        place_directrion = data['direction']
+        Place.place_directrion = data['direction']
         place.save()
         return jsonify(place.__dict__), 200
-    
+
 @app.route('/places/<place_id>', methods= ['DELETE'])
 def delete_place(place_id):
     Place.delete(uuid.UUID(place_id))

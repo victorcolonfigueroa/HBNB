@@ -10,14 +10,15 @@ class User(BaseModel):
 
     users = []
 
-    def __init__(self, name, email, password):
-        new_user = User(name, email, password)
+    def __init__(self, first_name, last_name, email, password):
+        new_user = User(first_name, email, password)
         if new_user in User.users:
             raise ValueError("User is already exists.")
         if email in User.used_emails:
             raise ValueError("Email already in use.")
         self.__user_id = uuid.self.uuid4()
-        self.name = name
+        self.first_name = first_name
+        self.last_name = last_name
         self.__email = email
         User.used_emails.add(email)
         self.__password = password
@@ -25,14 +26,16 @@ class User(BaseModel):
 
     def to_dict(self):
         return {
-            'name': self.name,
+            'first name': self.first_name,
+            'last name': self.last_name,
             'email': self.__email,
             'user ID': self.__user_id
         }
 
-    def new_name(self, new_name):
-        self.name = new_name
-        print(f"New name has been saved as {self.name}")
+    def new_name(self, new_name, last_name):
+        self.first_name = new_name
+        self.last_name = last_name
+        print(f"New name has been saved as {self.first_name}")
 
     def new_email(self, new_email):
         if new_email in User.used_emails:
@@ -58,10 +61,6 @@ class User(BaseModel):
 
     def add_review(self, review):
         self.review = Reviews(review)
-
-    def get_user_info():
-        info = get_user()
-        return info
 
     def print_review_text(self):
         if hasattr(self, 'review'):
