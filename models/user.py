@@ -36,7 +36,19 @@ class User:
         self.reviews = [] # List of reviews made by the user
         User.users[email] = self # Add the user to the dictionary
         data_manager.save(self) # Save the user to the data manager
-
+    
+    def serialize(self):
+        return {
+            'id': str(self.id),  # Convert UUID to string
+            'created_at': self.created_at.isoformat(),  # Convert datetime to string
+            'updated_at': self.updated_at.isoformat(),  # Convert datetime to string
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            # Don't include the password in the serialized output
+            'places': [str(place.id) for place in self.places],  # Convert list of Place objects to list of IDs
+            'reviews': [str(review.id) for review in self.reviews],  # Convert list of Review objects to list of IDs
+        }
 
     def update_profile(self, email=None, password=None, first_name=None, last_name=None):
         """

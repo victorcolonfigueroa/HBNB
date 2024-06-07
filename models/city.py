@@ -74,3 +74,35 @@ class City:
         city = data_manager.load(cls, obj_id) # Load the city with the given id
         if city:
             data_manager.delete(city) # Delete the city from the data manager
+
+    @classmethod
+    def from_dict(cls, data):
+        """
+        Create a City instance from a dictionary.
+
+        Args:
+            data (dict): The dictionary containing city data.
+
+        Returns:
+            City: The created city instance.
+        """
+        city = cls(data['name'], data['country']) # Create a new instance of the class using the 'name' and 'country' from the data dictionary
+        city.id = uuid.UUID(data['id'])  # Set the 'id' of the instance using the 'id' from the data dictionary
+        city.created_at = datetime.fromisoformat(data['created_at'])  # Set the 'created_at' of the instance using the 'created_at' from the data dictionary
+        city.updated_at = datetime.fromisoformat(data['update_at'])  # Set the 'updated_at' of the instance using the 'update_at' from the data dictionary
+        return city
+    
+    def to_dict(self):
+        """
+        Convert the City instance to a dictionary.
+
+        Returns:
+            dict: The dictionary containing city data.
+        """
+        return {
+            'id': str(self.id), # Convert the 'id' to a string
+            'name': self.name, # Use the 'name' attribute
+            'country': self.country, # Use the 'country' attribute
+            'created_at': self.created_at.isoformat, # Convert 'created_at' to an ISO 8601 string
+            'update_at': self.updated_at.isoformat  # Convert 'updated_at' to an ISO 8601 string
+        }
