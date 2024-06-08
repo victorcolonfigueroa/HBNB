@@ -1,4 +1,4 @@
-from flask import Flask, requests, jsonify
+from flask import Flask, requests, jsonify #type: ignore
 from model.placescls import Place
 import uuid
 
@@ -18,12 +18,12 @@ def create_place():
 @app.route('/places/<place_id>', methods= ['PUT'])
 def update_place(place_id):
     data = requests.get_json()
-    palce = Place.get(uuid.UUID(place_id))
+    place = Place.get(uuid.UUID(place_id))
     if 'name' in data:
         Place.place.name = data['name']
     if 'description' in data:
         Place.place.description = data['description']
-    if 'prince' in data:
+    if 'price' in data:
         Place.place.price = data['price']
     if 'direction' in data:
         Place.place_directrion = data['direction']
