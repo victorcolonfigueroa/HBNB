@@ -1,9 +1,11 @@
+from base_model import BaseModel
 import uuid
- 
 
 
-class Reviews:
+
+class Reviews(BaseModel):
     def __init__(self, text, clasification, user):
+        super().__init__()
         self.text = text
         self.clasification = clasification
         self.user = user

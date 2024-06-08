@@ -1,8 +1,10 @@
 import uuid
+from base_model import BaseModel
 
 
-class Places:
+class Places(BaseModel):
     def __init__(self, name, description, price, direction, user_id, creator):
+        super().__init__()
         self.name = name
         self.description = description
         self.price = price
@@ -43,8 +45,9 @@ class Places:
         self.direction = new_direction
         print(f'This is how to get there: {self.direction}')
 
-class Amenities(Places):
+class Amenities(BaseModel):
     def __init__(self, name, description):
+        super().__init__()
         self.name = name
         self.description = description
 

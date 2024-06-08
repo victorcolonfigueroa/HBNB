@@ -1,8 +1,10 @@
 import uuid
+from base_model import BaseModel
 
 
-class Country:
+class Country(BaseModel):
     def __init__(self, country_name, area_code):
+        super().__init__()
         self.country_name = country_name
         self.area_code = area_code
 
@@ -18,8 +20,9 @@ class Country:
         self.area_code = new_acode
         print(f'Your area code is {self.area_code}')
 
-class City(Country):
+class City(BaseModel):
     def __init__(self, name):
+        super().__init__()
         self.city_name = name
         self.id = uuid.uuid4()
 
