@@ -11,7 +11,7 @@ class City:
     """
     City class represents a city in the system.
     """
-    def __init__(self, name, country):
+    def __init__(self, name, country_code):
         """
         Initialize a new City instance.
 
@@ -23,7 +23,7 @@ class City:
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self.name = name
-        self.country = country
+        self.country_code = country_code
         self.places = []  # List of places in the city
         self.users = []  # List of users in the city
         data_manager.save(self) # Save the city to the data manager
@@ -86,10 +86,15 @@ class City:
         Returns:
             City: The created city instance.
         """
-        city = cls(data['name'], data['country']) # Create a new instance of the class using the 'name' and 'country' from the data dictionary
-        city.id = uuid.UUID(data['id'])  # Set the 'id' of the instance using the 'id' from the data dictionary
-        city.created_at = datetime.fromisoformat(data['created_at'])  # Set the 'created_at' of the instance using the 'created_at' from the data dictionary
-        city.updated_at = datetime.fromisoformat(data['update_at'])  # Set the 'updated_at' of the instance using the 'update_at' from the data dictionary
+        try:
+            city = cls(data['name'], data['country'])
+            city.id = uuid.UUID(data['id'])
+            city.created_at = datetime.fromisoformat(data['created_at'])
+            city.updated_at = datetime.fromisoformat(data['updated_at'])
+        except KeyError as e:
+            raise ValueError(f"Missing key in data dictionary: {e}")
+        except ValueError as e:
+            raise ValueError(f"Invalid value in data dictionary: {e}")
         return city
     
     def to_dict(self):
@@ -102,7 +107,7 @@ class City:
         return {
             'id': str(self.id), # Convert the 'id' to a string
             'name': self.name, # Use the 'name' attribute
-            'country': self.country, # Use the 'country' attribute
-            'created_at': self.created_at.isoformat, # Convert 'created_at' to an ISO 8601 string
-            'update_at': self.updated_at.isoformat  # Convert 'updated_at' to an ISO 8601 string
+            'country': self.country_code, # Use the 'country' attribute
+            'created_at': self.created_at.isoformat(), # Convert 'created_at' to an ISO 8601 string
+            'update_at': self.updated_at.isoformat()  # Convert 'updated_at' to an ISO 8601 string
         }

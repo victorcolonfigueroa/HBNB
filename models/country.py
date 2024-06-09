@@ -26,6 +26,8 @@ class Country:
         self.cities = [] # List of cities in the country
         data_manager.save(self) # Save the country to the data manager
 
+    
+
     def add_city(self, city):
         """
         Add a city to the country.
@@ -83,10 +85,15 @@ class Country:
         Returns:
             Country: The created country instance.
         """
-        country = cls(data['name'], data['code']) # Create a new instance of the class using the 'name' and 'code' from the data dictionary
-        country.id = uuid.UUID(data['id'])  # Set the 'id' of the instance using the 'id' from the data dictionary
-        country.created_at = datetime.fromisoformat(data['created_at'])  # Set the 'created_at' of the instance using the 'created_at' from the data dictionary
-        country.updated_at = datetime.fromisoformat(data['update_at']) # Set the 'updated_at' of the instance using the 'update_at' from the data dictionary
+        try:
+            country = cls(data['name'], data['code'])
+            country.id = uuid.UUID(data['id'])
+            country.created_at = datetime.fromisoformat(data['created_at'])
+            country.updated_at = datetime.fromisoformat(data['updated_at'])
+        except KeyError as e:
+            raise ValueError(f"Missing key in data dictionary: {e}")
+        except ValueError as e:
+            raise ValueError(f"Invalid value in data dictionary: {e}")
         return country
     
     def to_dict(self):
@@ -101,7 +108,8 @@ class Country:
             'name': self.name,
             'code': self.code,
             'created_at': self.created_at.isoformat(),
-            'update_at': self.updated_at.isoformat()
+            'update_at': self.updated_at.isoformat(),
+            'cities': [city.to_dict() for city in self.cities]  # Serialize cities
         }
 
     @classmethod
