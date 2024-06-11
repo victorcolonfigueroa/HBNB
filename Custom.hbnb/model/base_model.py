@@ -36,3 +36,6 @@ class BaseModel:
     @classmethod
     def get_instances(cls):
         return [instance for instance in cls.__instances if isinstance(instance, cls)]
+
+
+

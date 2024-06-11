@@ -1,15 +1,16 @@
 from base_model import BaseModel
+from usercls import User
 '''from persistence.data_manager import'''
 
 
 class Places(BaseModel):
     def __init__(self, name, description, price, direction, user_id, creator):
-        super().__init__()
+        super().__init__() #self.id = self.host_id get_instances
         self.name = name
         self.description = description
         self.price = price
         self.direction = direction
-        self.user_id = user_id
+        self.user_id = None
         self.creator = creator
 
     def verify_user(self, user_id):
@@ -44,6 +45,12 @@ class Places(BaseModel):
         self.direction = new_direction
         print(f'This is how to get there: {self.direction}')
 
+    def assign_host(self):
+        id = User.self.id
+        self.user_id = super().host(self, id)
+
+
+
 class Amenities(BaseModel):
     def __init__(self, name, description):
         super().__init__()
@@ -52,9 +59,8 @@ class Amenities(BaseModel):
 
     def new_amenity(self, new_amenity):
         self.name = new_amenity
-        print(f'This is your new amenitie{self.name}')
+        print(f'This is your new amenity{self.name}')
 
     def new_description(self, new_desciption):
         self.description = new_desciption
         print(f'This is your amenities description: {self.decription}')
-
