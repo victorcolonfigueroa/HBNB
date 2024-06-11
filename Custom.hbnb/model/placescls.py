@@ -1,5 +1,5 @@
-import uuid
 from base_model import BaseModel
+'''from persistence.data_manager import'''
 
 
 class Places(BaseModel):
@@ -9,7 +9,6 @@ class Places(BaseModel):
         self.description = description
         self.price = price
         self.direction = direction
-        self.id = uuid.uuid4()
         self.user_id = user_id
         self.creator = creator
 

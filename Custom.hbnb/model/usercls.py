@@ -2,7 +2,6 @@ from reviewscls import Reviews
 from countrycls import Country, City
 from placescls import Places, Amenities
 from base_model import BaseModel
-import uuid
 
 
 class User(BaseModel):
@@ -11,12 +10,8 @@ class User(BaseModel):
     users = []
 
     def __init__(self, first_name, last_name, email, password):
-        new_user = User(first_name, email, password)
-        if new_user in User.users:
-            raise ValueError("User is already exists.")
-        if email in User.used_emails:
-            raise ValueError("Email already in use.")
-        self.__user_id = uuid.self.uuid4()
+        super().__init__()
+        '''self.__user_id = uuid.self.uuid4()'''
         self.first_name = first_name
         self.last_name = last_name
         self.__email = email
@@ -24,7 +19,7 @@ class User(BaseModel):
         self.__password = password
         self.reviews = []
 
-    def to_dict(self):
+    def __dict__(self):
         return {
             'first name': self.first_name,
             'last name': self.last_name,

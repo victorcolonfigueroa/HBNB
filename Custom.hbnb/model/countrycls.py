@@ -1,4 +1,3 @@
-import uuid
 from base_model import BaseModel
 
 
@@ -24,7 +23,6 @@ class City(BaseModel):
     def __init__(self, name):
         super().__init__()
         self.city_name = name
-        self.id = uuid.uuid4()
 
     def city_name(self, city_name):
         if city_name is None:

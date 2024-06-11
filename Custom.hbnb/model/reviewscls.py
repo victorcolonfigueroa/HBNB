@@ -1,15 +1,16 @@
 from base_model import BaseModel
-import uuid
+
 
 
 
 class Reviews(BaseModel):
-    def __init__(self, text, clasification, user):
+    def __init__(self, text, clasification, user, rating):
         super().__init__()
-        self.text = text
+        self.comment = text
         self.clasification = clasification
         self.user = user
-        self.id = uuid.uuid4()
+        self.rating = rating
+
 
     def new_review(self, new_review):
         self.text = new_review
@@ -18,3 +19,12 @@ class Reviews(BaseModel):
     def new_clasification(self, new_clasification):
         self.clasification = new_clasification
         print(f'The clasification is: {self.clasification}')
+
+    def delete_review(self):
+        super().delete(self)
+
+    def give_rating(self, rating):
+        if not isinstance(rating, int) and rating < 1 or rating > 5:
+            raise ValueError("Rating must be an integer between 1 and 5.")
+        rating = self.rating
+        return self.rating

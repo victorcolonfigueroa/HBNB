@@ -26,7 +26,7 @@ ns_review = Namespace('reviews', description='users reviews of places and rating
 
 api.add_namespace(ns_review)
 
-@ns_review.route('/places')
+@ns_review.route('/places/reviews')
 class ReviewList(Resource):
     @ns_review.doc('list_review')
     @ns_review.marshal_list_with(review_model)
@@ -36,28 +36,51 @@ class ReviewList(Resource):
         data = request.json
         try:
             review = Reviews(comment=data['comment'], rating=data['rating'], user_id=data['user_id'])
-            data_manager.save(review) #make a save method to persist the Reviews
+            data_manager.save(review)
             return review, 201
         except ValueError as e:
             abort(400, description=str(e))
 
+    def get(self, user_id):
+        review = Reviews.load_all(user_id) #make a method in review to get reviews
+        return review
 
-@app.route('/users/<user_id>/reviews', methods=['GET'])
-def get_reviews_form_user():
-    pass
+    def get(self, place_id):
+        review = Reviews.load_all(place_id)
+        return review
 
-@app.route('/places/<place_id>/reviews', methods=['GET'])
-def get_reviews_form_place():
-    pass
+    def get(self, review_id):
+        review = Reviews.load_all(review_id)
+        return review
 
-@app.route('/reviews/<review_id>', methods=['GET'])
-def get_reviews():
-    pass
+    def put(self, review_id):
+        review = Reviews.load(review_id)
+        if not review:
+            abort(404, description="Review not found.")
 
-@app.route('/reviews/<review_id>', methods=['PUT'])
-def Update_review():
-    pass
+        if not request.json:
+            abort(400, description="Request payload must be json.")
 
-@app.route('/reviews/<review_id>', method=['DELETE'])
-def delete_review():
-    pass
+        data = request.json
+        validate_review_data(data)#Add this function to review
+
+        review = data.get('review')
+        reviewid = data.get('review_id')
+
+        try:
+            review = Reviews.load(review_id)
+            Reviews.update(review=review)#Add rating when you make rating method
+            data_manager.save(review)
+            return review
+        except ValueError as e:
+            abort(400, descriptio=str(e))
+
+    def delete(self, review_id):
+        try:
+            review = Reviews.load(review_id)
+            if review is None:
+                abort(404, description="Review not found.")
+            review.delete(review_id)
+            return '', 204
+        except Exception as e:
+            abort(500, description=str(e))
