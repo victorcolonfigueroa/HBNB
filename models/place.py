@@ -3,7 +3,7 @@ from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
 from user import User
-from Base_model import BaseModel
+from models.Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
