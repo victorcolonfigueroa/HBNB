@@ -2,12 +2,14 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
+from user import User
+from Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class Place:
+class Place(BaseModel):
     """
     Place class represents a place in the system.
     """
@@ -28,9 +30,7 @@ class Place:
             price_per_night (float): The price per night for the place.
             max_guests (int): The maximum number of guests the place can accommodate.
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__()
         self.name = name
         self.description = description
         self.address = address
@@ -45,6 +45,11 @@ class Place:
         self.amenities = []  # List of amenities available in the place
         self.reviews = [] # List of reviews for the place
         data_manager.save(self) # Save the place to the data manager
+        
+    def assing_id(self):
+        id = User.self.id
+        host_id = super().host(self, id)
+        self.host = host_id
 
     def update_details(self, name=None, description=None, address=None, number_of_rooms=None,
                        bathrooms=None, price_per_night=None, max_guests=None):

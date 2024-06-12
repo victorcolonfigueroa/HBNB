@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
+from Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class City:
+class City(BaseModel):
     """
     City class represents a city in the system.
     """
@@ -19,9 +20,7 @@ class City:
             name (str): The name of the city.
             country (str): The country where the city is located.
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__()
         self.name = name
         self.country = country
         self.places = []  # List of places in the city

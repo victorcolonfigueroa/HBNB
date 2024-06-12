@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
+from Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class Amenity:
+class Amenity(BaseModel):
     """
     Amenity class represents an amenity in the system.
     """
@@ -19,9 +20,7 @@ class Amenity:
             name (str): The name of the amenity.
             description (str): The description of the amenity.
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__()
         self.name = name
         self.description = description
         data_manager.save(self) # Save the amenity to the data manager

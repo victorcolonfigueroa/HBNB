@@ -2,12 +2,13 @@ from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
 import uuid
 from datetime import datetime
+from Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class Country:
+class Country(BaseModel):
     """
     Country class represents a country in the system.
     """
@@ -18,9 +19,7 @@ class Country:
         Args:
             name (str): The name of the country.
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__()
         self.name = name
         self.cities = [] # List of cities in the country
         data_manager.save(self) # Save the country to the data manager

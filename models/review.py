@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
+from Base_model import BaseModel
 
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class Review:
+class Review(BaseModel):
     """
     Review class represents a review in the system.
     """
@@ -21,9 +22,7 @@ class Review:
             rating (int): The rating given by the user.
             comment (str): The comment written by the user.
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__()
         self.user = user
         self.place = place
         self.rating = rating

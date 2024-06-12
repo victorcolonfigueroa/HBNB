@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
-
+from Base_model import BaseModel
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
 
-class User:
+class User(BaseModel):
     """
     User class represents a user in the system.
     """
@@ -23,11 +23,9 @@ class User:
             first_name (str): The user's first name.
             last_name (str): The user's last name.
         """
+        super().__init__()
         if email in User.users:
             raise ValueError("User with email {} already exists".format(email))
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now() 
-        self.updated_at = datetime.now()
         self.email = email
         self.password = password
         self.first_name = first_name
@@ -37,6 +35,9 @@ class User:
         User.users[email] = self # Add the user to the dictionary
         data_manager.save(self) # Save the user to the data manager
 
+    def assing_id(self):
+        id = User.self.id
+        super().host(self, id)
 
     def update_profile(self, email=None, password=None, first_name=None, last_name=None):
         """
