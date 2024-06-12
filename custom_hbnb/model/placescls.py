@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
-from usercls import User
-from base_model import BaseModel
+from model.usercls import User
+from model.base_model import BaseModel
 
 
 # Create an instance of DataManager

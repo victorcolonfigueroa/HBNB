@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
-from base_model import BaseModel
+from model.base_model import BaseModel
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)

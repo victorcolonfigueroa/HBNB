@@ -11,14 +11,15 @@ class Amenity:
     """
     Amenity class represents an amenity in the system.
     """
-    def __init__(self, name):
+    def __init__(self, name, description):
         self.id = uuid.uuid4()
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self.name = name
+        self.description = description
         data_manager.save(self)
 
-    def update_details(self, name=None):
+    def update_amenity(self, name=None):
         if name:
             self.name = name
         self.updated_at = datetime.now()

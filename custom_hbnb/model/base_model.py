@@ -7,9 +7,6 @@ class BaseModel:
         self.created_at = datetime.now()
         self.update_at = None
 
-    def save(self):
-        self.update_at = datetime.now()
-
     def __dict__(self):
         return {
             'id': self.id,
@@ -34,7 +31,7 @@ class BaseModel:
 
     def update(self, **kwargs):
         for key, value in kwargs.items():
-            if key is not "__class__":
+            if key != "__class__":
                 self.__dict__[key] = value
             self.save
 

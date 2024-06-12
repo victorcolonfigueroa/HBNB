@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import unittest
-from models.amenity import Amenity
+from model.amenitycls import Amenity
 
 class TestAmenity(unittest.TestCase):
     def test_create_amenity(self):
