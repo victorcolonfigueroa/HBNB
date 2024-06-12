@@ -1,93 +1,152 @@
-from flask import Flask, requests, jsonify, abort # type: ignore
+from flask import request, jsonify, abort, Blueprint
+from flask_restx import Api, Namespace, Resource, fields
 from model.usercls import User
-'''RESTful endpoints for User class.'''
+from model.countrycls import Country, City
+from model.placescls import Place
+from api.place_routes import place_model
+from werkzeug.security import generate_password_hash
 
-app = Flask(__name__)
+ns_user = Namespace('users', description='User operations')
+
+user_model = ns_user.model('User', {
+    'id': fields.String(readOnly=True, description='The unique identifier of a user'),
+    'email': fields.String(required=True, description='The user email'),
+    'password': fields.String(required=True, description='The user password'),
+    'first_name': fields.String(required=True, description='The user first name'),
+    'last_name': fields.String(required=True, description='The user last name'),
+    'city_id': fields.String(description='The city ID'),
+    'country_id': fields.String(description='The country ID'),
+    'created_at': fields.DateTime(readOnly=True, description='The date and time the user was created'),
+    'updated_at': fields.DateTime(readOnly=True, description='The date and time the user was last updated'),
+    'places': fields.List(fields.Nested(ns_user.model('Place', {
+        'id': fields.String(readOnly=True, description='The unique identifier of a place'),
+        'name': fields.String(required=True, description='The place name'),
+        'description': fields.String(required=True, description='The place description'),
+        'address': fields.String(required=True, description='The place address'),
+        'city_id': fields.String(required=True, description='The city ID'),
+        'latitude': fields.Float(required=True, description='The latitude of the place'),
+        'longitude': fields.Float(required=True, description='The longitude of the place'),
+        'host_id': fields.String(required=True, description='The host ID'),
+        'number_of_rooms': fields.Integer(required=True, description='The number of rooms in the place'),
+        'number_of_bathrooms': fields.Integer(required=True, description='The number of bathrooms in the place'),
+        'price_per_night': fields.Float(required=True, description='The price per night'),
+        'max_guests': fields.Integer(required=True, description='The maximum number of guests'),
+        'amenity_ids': fields.List(fields.String, required=True, description='The list of amenity IDs'),
+        'created_at': fields.DateTime(readOnly=True, description='The date and time the place was created'),
+        'updated_at': fields.DateTime(readOnly=True, description='The date and time the place was last updated')
+    }))),
+    'reviews': fields.List(fields.Nested(ns_user.model('Review', {
+        'id': fields.String(readOnly=True, description='The unique identifier of a review'),
+        'text': fields.String(required=True, description='The review text'),
+        'rating': fields.Integer(required=True, description='The review rating'),
+        'user_id': fields.String(required=True, description='The user ID'),
+        'place_id': fields.String(required=True, description='The place ID'),
+        'created_at': fields.DateTime(readOnly=True, description='The date and time the review was created'),
+        'updated_at': fields.DateTime(readOnly=True, description='The date and time the review was last updated')
+    })))
+})
 
 
-def setup_routes(app):
-    '''This function sets up endpoints for User
+def validate_email(email):
+    """
+    Validates an email address using a regular expression.
 
     Args:
-        app (function): Initializes Flask
+        email (str): The email address to validate.
 
     Returns:
-        string: returns a list in json format depending on the method
-    '''
-    @app.route('/users', methods=['POST'])
-    def create_user():
-        '''Creates user
+        A match object if the email address is valid, None otherwise.
+    """
+    import re
+    email_regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b' # Regular expression for validating email addresses
+    return re.match(email_regex, email) # Return a match object if the email address is valid, None otherwise
 
-        Returns:
-            string: return a json object of user instances in json format
-        '''
-        data = requests.get_json()
-        user = User(data['first_name'], 'last_name', data['email'], data['password'])
-        User.users.add(user)
+def validate_user_data(data):
+    if 'email' not in data or not isinstance(data['email'], str) or not data['email'].strip():
+        abort(400, description="Email must be a non-empty string")
+    if 'password' not in data or not isinstance(data['password'], str) or not data['password'].strip():
+        abort(400, description="Password must be a non-empty string")
+    if 'first_name' not in data or not isinstance(data['first_name'], str) or not data['first_name'].strip():
+        abort(400, description="First name must be a non-empty string")
+    if 'last_name' not in data or not isinstance(data['last_name'], str) or not data['last_name'].strip():
+        abort(400, description="Last name must be a non-empty string")
+    if 'city_id' in data:
+        city = City.load(data['city_id'])
+        if not city:
+            abort(400, description="Invalid city ID")
+    if 'country_id' in data:
+        country = Country.load(data['country_id'])
+        if not country:
+            abort(400, description="Invalid country ID")
 
-        #Save the user to the database
-        return jsonify(user.to_dict()), 201
+@ns_user.route('/')
+class UserList(Resource):
+    @ns_user.doc('list_users')
+    @ns_user.marshal_list_with(user_model)
+    def get(self):
+        users = User.load_all()
+        return [user.serialize() for user in users]
 
-    @app.route('/users', methods=['GET'])
-    def get_all_users():
-        '''gets a list of users registered
+    @ns_user.doc('create_user')
+    @ns_user.expect(user_model)
+    @ns_user.marshal_with(user_model, code=201)
+    def post(self):
+        if not request.json:
+            abort(400, description="Request payload must be JSON")
+        data = request.json
+        validate_user_data(data)
+        hashed_password = generate_password_hash(data['password'])
+        user = User(
+            email=data['email'],
+            password=hashed_password,
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            city_id=data.get('city_id'),
+            country_id=data.get('country_id')
+        )
+        return user.serialize(), 201
 
-        Returns:
-            string: returns list of users in json object
-        '''
-        return jsonify([user.to_dict() for user in User.users]), 200
-
-    @app.route('/users/<user_id>', methods=['GET'])
-    def get_user(user_id):
-        '''gets user id
-
-        Args:
-            user_id string: string of unique id
-
-        Returns:
-            stirng: returns a string of user id
-        '''
-        user = next((user for user in User.users if user.user_id == user_id), None)
-        if user is None:
+@ns_user.route('/<string:user_id>')
+@ns_user.response(404, 'User not found')
+@ns_user.param('user_id', 'The user identifier')
+class UserResource(Resource):
+    @ns_user.doc('get_user')
+    @ns_user.marshal_with(user_model)
+    def get(self, user_id):
+        user = User.load(user_id)
+        if not user:
             abort(404, description="User not found")
-        return jsonify(user.to_dict()), 200
+        return user.to_dict()
 
-    @app.route('/users/<user_id>', methods=['PUT'])
-    def update_user(user_id):
-        '''updates user information
-
-        Args:
-            user_id (string): unique id of the user
-
-        Returns:
-            list: Returns a list with the updated user information
-        '''
-        user = next((user for user in User.users if user.user_id == user_id), None)
-        if user is None:
+    @ns_user.doc('update_user')
+    @ns_user.expect(user_model)
+    @ns_user.marshal_with(user_model)
+    def put(self, user_id):
+        user = User.load(user_id)
+        if not user:
             abort(404, description="User not found")
-        data = requests.get_json()
-        user.first_name = data.get('first_name', user.first_name)
-        user.email = data.get('email', user.email)
-        user.password = data.get('password', user.password)
-        # Save the updated user to the database...
-        return jsonify(user.to_dict()), 200
 
-    @app.route('/users/<user_id>', methods=['DELETE'])
-    def delete_user(user_id):
-        '''deletes the user profile
+        if not request.json:
+            abort(400, description="Request payload must be JSON")
 
-        Args:
-            user_id (string): unique id of user
+        data = request.json
+        validate_user_data(data)
+        user.update_details(
+            email=data.get('email'),
+            password=data.get('password'),
+            first_name=data.get('first_name'),
+            last_name=data.get('last_name'),
+            city_id=data.get('city_id'),
+            country_id=data.get('country_id')
+        )
+        return user.to_dict()
 
-        Returns:
-            string: returns a blank string meaning it succesfully deleted the user
-        '''
-        user = next((user for user in User.users if user.user_id == user_id), None)
-        if user is None:
+    @ns_user.doc('delete_user')
+    @ns_user.response(204, 'User deleted')
+    def delete(self, user_id):
+        user = User.load(user_id)
+        if not user:
             abort(404, description="User not found")
-        # Delete the user from the database...
-        User.users.remove(user)
-        return '', 204
 
-if __name__ == "__main__":
-    app.run(debug=True)
+        User.delete(user_id)
+        return ', 204cls'

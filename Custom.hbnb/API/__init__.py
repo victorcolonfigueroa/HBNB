@@ -1,6 +1,9 @@
 from flask import Flask # type: ignore
 from .user_routes import setup_routes
-from .amenities_routes import 
+import amenities_routes
+import place_routes
+import reviews_routes
+
 
 
 def create_app():

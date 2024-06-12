@@ -1,56 +1,80 @@
+import uuid
+from datetime import datetime
+from persistence.data_manager import DataManager
+from persistence.file_storage import FileStorage
 from base_model import BaseModel
-from usercls import User
-from placescls import Places
 
+# Create an instance of DataManager
+storage = FileStorage()
+data_manager = DataManager(storage)
 
+class Review(BaseModel):
+    """
+    Review class represents a review in the system.
+    """
+    def __init__(self, user, place, rating, comment):
+        """
+        Initialize a new Review instance.
 
-class Reviews(BaseModel):
-    def __init__(self, text):
+        Args:
+            user (User): The user who wrote the review.
+            place (Place): The place that the review is for.
+            rating (int): The rating given by the user.
+            comment (str): The comment written by the user.
+        """
         super().__init__()
-        self.comment = text
-        self.rating = None
-        self.place_id = None
-        self.user_id = None
+        self.user = user
+        self.place = place
+        self.rating = rating
+        self.comment = comment
+        data_manager.save(self) # Save the review to the data manager
 
+    def update_review(self, rating=None, comment=None):
+        """
+        Update the review's rating and comment.
 
+        Args:
+            rating (int, optional): The new rating. Defaults to None.
+            comment (str, optional): The new comment. Defaults to None.
+        """
+        if rating:
+            self.rating = rating # Update the rating
+        if comment:
+            self.comment = comment # Update the comment
+        self.updated_at = datetime.now() # Update the updated_at timestamp
+        data_manager.save(self) # Save the updated review to the data manager
 
-    def new_review(self, new_review):
-        self.text = new_review
-        print(f'This is your new text {self.text}')
+    @classmethod
+    def load(cls, obj_id):
+        """
+        Load a review by ID.
 
-    def delete_review(self):
-        super().delete(self)
+        Args:
+            obj_id (uuid.UUID): The ID of the review to be loaded.
 
-    def give_rating(self, rating):
-        if not isinstance(rating, int) and rating < 1 or rating > 5:
-            raise ValueError("Rating must be an integer between 1 and 5.")
-        rating = self.rating
-        return self.rating
+        Returns:
+            Review: The loaded review.
+        """
+        return data_manager.load(cls, obj_id) # Load the review with the given id
 
-    def assign_user(self):
-        id = User.self.id
-        self.user_id = super().host(self, id)
+    @classmethod
+    def load_all(cls):
+        """
+        Load all reviews.
 
-    def assign_place(self):
-        id = Places.self.id
-        self.place_id = super().host(self, id)
+        Returns:
+            list: A list of all reviews.
+        """
+        return data_manager.load_all(cls) # Load all reviews from the data manager
 
-    def validate_review_data(self, data[]):
-    # Validate 'text' field: must be a non-empty string
-    if 'text' not in data or not isinstance(data['text'], str) or not data['text'].strip():
-        raise ValueError("The 'text' field must be a non-empty string.")
+    @classmethod
+    def delete(cls, obj_id):
+        """
+        Delete a review by ID.
 
-    # Validate 'rating' field: must be an integer between 1 and 5
-    if 'rating' not in data or not isinstance(data['rating'], int) or not 1 <= data['rating'] <= 5:
-        raise ValueError("The 'rating' field must be an integer between 1 and 5.")
-
-    if 'user_id' not in data or not isinstance(data['user_id'], str):
-        raise ValueError("Could not get user id.")
-    if 'place_id' not in data or not isinstance(data['place_id'], str):
-        raise ValueError("place id not found.")
-
-    return data
-
-    # If all validations pass
-    return True
-
+        Args:
+            obj_id (uuid.UUID): The ID of the review to be deleted.
+        """
+        review = data_manager.load(cls, obj_id) # Load the review with the given id
+        if review: # Check if the review exists
+            data_manager.delete(review) # Delete the review from the data manager

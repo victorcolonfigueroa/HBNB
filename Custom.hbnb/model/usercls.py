@@ -1,64 +1,131 @@
-from reviewscls import Reviews
-from countrycls import Country, City
-from placescls import Places, Amenities
+import uuid
+from datetime import datetime
+from persistence.data_manager import DataManager
+from persistence.file_storage import FileStorage
 from base_model import BaseModel
-
+# Create an instance of DataManager
+storage = FileStorage()
+data_manager = DataManager(storage)
 
 class User(BaseModel):
-    used_emails = set()
+    """
+    User class represents a user in the system.
+    """
+    users = {} # Dictionary to store all users
 
-    users = []
+    def __init__(self, email, password, first_name, last_name):
+        """
+        Initialize a new User instance.
 
-    def __init__(self, first_name, last_name, email, password):
+        Args:
+            email (str): The user's email.
+            password (str): The user's password.
+            first_name (str): The user's first name.
+            last_name (str): The user's last name.
+        """
         super().__init__()
-        '''self.__user_id = uuid.self.uuid4()'''
+        if email in User.users:
+            raise ValueError("User with email {} already exists".format(email))
+        self.email = email
+        self.password = password
         self.first_name = first_name
         self.last_name = last_name
-        self.__email = email
-        User.used_emails.add(email)
-        self.__password = password
-        self.reviews = []
+        self.places = [] # List of places hosted by the user
+        self.reviews = [] # List of reviews made by the user
+        User.users[email] = self # Add the user to the dictionary
+        data_manager.save(self) # Save the user to the data manager
 
-    def __dict__(self):
-        return {
-            'first name': self.first_name,
-            'last name': self.last_name,
-            'email': self.__email,
-            'user ID': self.__user_id
-        }
+    def assing_id(self):
+        id = User.self.id
+        super().host(self, id)
 
-    def new_name(self, new_name, last_name):
-        self.first_name = new_name
-        self.last_name = last_name
-        print(f"New name has been saved as {self.first_name}")
+    def update_profile(self, email=None, password=None, first_name=None, last_name=None):
+        """
+        Update the user's profile.
 
-    def new_email(self, new_email):
-        if new_email in User.used_emails:
-            raise ValueError("Email already in use.")
-        User.used_emails.remove(self.__email)
-        self.__email = new_email
-        print(f"New email has been saved as {self.__email}")
+        Args:
+            email (str, optional): The new email. Defaults to None.
+            password (str, optional): The new password. Defaults to None.
+            first_name (str, optional): The new first name. Defaults to None.
+            last_name (str, optional): The new last name. Defaults to None.
+        """
+        if email and email != self.email and email in User.users:
+            raise ValueError("User with email {} already exists".format(email))  # Check if the new email is already in use
+        if email:
+            del User.users[self.email] # Remove the user from the dictionary
+            self.email = email  # Update the email
+            User.users[self.email] = self  # Add the user back to the dictionary
+        if password:
+            self.password = password # Update the password
+        if first_name:
+            self.first_name = first_name # Update the first name
+        if last_name:
+            self.last_name = last_name # Update the last name
+        self.updated_at = datetime.now()
+        data_manager.save(self) # Save the updated user to the data manager
 
-    @property
-    def password(self):
-        return self.__password
 
-    @password.setter
-    def password(self, new_password):
-        self.__password = new_password
-        print(f'New password has been saved')
+    def host_place(self, place):
+        """
+        Host a place.
 
-    def add_place(self, place_name, city_name, country_name, amenities_list):
-        self.place = Places(place_name)
-        self.city = City(city_name)
-        self.country = Country(country_name)
-        self.amenities = Amenities(amenities_list)
+        Args:
+            place (Place): The place to be hosted.
+        """
+        if place.host is not None:
+            raise ValueError("Place is already hosted by a user")
+        self.places.append(place)
+        place.host = self
+        data_manager.save(self) # Save the user to the data manager
+        data_manager.save(place) # Save the place to the data manager
 
-    def add_review(self, review):
-        self.review = Reviews(review)
 
-    def print_review_text(self):
-        if hasattr(self, 'review'):
-            print(self.review.text)
-        else:
-            print("No review has been added yet.")
+    def write_review(self, review):
+        """
+        Write a review.
+
+        Args:
+            review (Review): The review to be written.
+        """
+        self.reviews.append(review) # Add the review to the user's reviews
+        data_manager.save(self) # Save the user to the data manager
+        data_manager.save(review) # Save the review to the data manager
+
+
+    @classmethod
+    def load(cls, obj_id):
+        """
+        Load a user by ID.
+
+        Args:
+            obj_id (uuid.UUID): The ID of the user to be loaded.
+
+        Returns:
+            User: The loaded user.
+        """
+        return data_manager.load(cls, obj_id) # Load the user from the data manager
+
+
+    @classmethod
+    def load_all(cls):
+        """
+        Load all users.
+
+        Returns:
+            list: A list of all users.
+        """
+        return data_manager.load_all(cls) # Load all users from the data manager
+
+
+    @classmethod
+    def delete(cls, obj_id):
+        """
+        Delete a user by ID.
+
+        Args:
+            obj_id (uuid.UUID): The ID of the user to be deleted.
+        """
+        user = data_manager.load(cls, obj_id) # Load the user
+        if user: # Check if the user exists
+            del User.users[user.email] # Remove the user from the dictionary
+            data_manager.delete(user) # Delete the user from the data manager
