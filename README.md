@@ -65,4 +65,8 @@ Utilize Python’s uuid module to generate UUID4 ids.
 
 Leverage Python’s datetime module to record timestamps for creation and updates.
 
+## Authors
+- Victor Colon
+- Oscar Rapale
+- Christian Diaz
 
