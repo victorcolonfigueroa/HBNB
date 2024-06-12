@@ -11,71 +11,55 @@ class Review:
     """
     Review class represents a review in the system.
     """
-    def __init__(self, user, place, rating, comment):
-        """
-        Initialize a new Review instance.
+    reviews = [] # List of all reviews in the system
 
-        Args:
-            user (User): The user who wrote the review.
-            place (Place): The place that the review is for.
-            rating (int): The rating given by the user.
-            comment (str): The comment written by the user.
-        """
+    def __init__(self, text, rating, user_id, place_id):
         self.id = uuid.uuid4()
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
-        self.user = user
-        self.place = place
+        self.text = text
         self.rating = rating
-        self.comment = comment
-        data_manager.save(self) # Save the review to the data manager
+        self.user_id = user_id
+        self.place_id = place_id
+        data_manager.save(self)
 
-    def update_review(self, rating=None, comment=None):
-        """
-        Update the review's rating and comment.
-
-        Args:
-            rating (int, optional): The new rating. Defaults to None.
-            comment (str, optional): The new comment. Defaults to None.
-        """
+    def update_details(self, text=None, rating=None):
+        if text:
+            self.text = text
         if rating:
-            self.rating = rating # Update the rating
-        if comment:
-            self.comment = comment # Update the comment
-        self.updated_at = datetime.now() # Update the updated_at timestamp
-        data_manager.save(self) # Save the updated review to the data manager
+            self.rating = rating
+        self.updated_at = datetime.now()
+        data_manager.save(self)
 
     @classmethod
     def load(cls, obj_id):
-        """
-        Load a review by ID.
-
-        Args:
-            obj_id (uuid.UUID): The ID of the review to be loaded.
-
-        Returns:
-            Review: The loaded review.
-        """
-        return data_manager.load(cls, obj_id) # Load the review with the given id
+        return data_manager.load(cls, obj_id)
 
     @classmethod
     def load_all(cls):
-        """
-        Load all reviews.
-
-        Returns:
-            list: A list of all reviews.
-        """
-        return data_manager.load_all(cls) # Load all reviews from the data manager
+        return data_manager.load_all(cls)
 
     @classmethod
     def delete(cls, obj_id):
-        """
-        Delete a review by ID.
+        review = data_manager.load(cls, obj_id)
+        if review:
+            data_manager.delete(review)
 
-        Args:
-            obj_id (uuid.UUID): The ID of the review to be deleted.
-        """
-        review = data_manager.load(cls, obj_id) # Load the review with the given id
-        if review: # Check if the review exists
-            data_manager.delete(review) # Delete the review from the data manager
+    @classmethod
+    def from_dict(cls, data):
+        review = cls(data['text'], data['rating'], data['user_id'], data['place_id'])
+        review.id = uuid.UUID(data['id'])
+        review.created_at = datetime.fromisoformat(data['created_at'])
+        review.updated_at = datetime.fromisoformat(data['updated_at'])
+        return review
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'text': self.text,
+            'rating': self.rating,
+            'user_id': str(self.user_id),
+            'place_id': str(self.place_id),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }

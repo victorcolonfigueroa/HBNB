@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime
+from models.review import Review
+from models.place import Place
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
 
@@ -13,7 +15,7 @@ class User:
     """
     users = {} # Dictionary to store all users
 
-    def __init__(self, email, password, first_name, last_name):
+    def __init__(self, email, password, first_name, last_name, city_id=None, country_id=None):
         """
         Initialize a new User instance.
 
@@ -22,6 +24,8 @@ class User:
             password (str): The user's password.
             first_name (str): The user's first name.
             last_name (str): The user's last name.
+            country (str, optional): The user's country. Defaults to None.
+            city (str, optional): The user's city. Defaults to None.
         """
         if email in User.users:
             raise ValueError("User with email {} already exists".format(email))
@@ -32,25 +36,29 @@ class User:
         self.password = password
         self.first_name = first_name
         self.last_name = last_name
+        self.country_id = country_id
+        self.city_id = city_id
         self.places = [] # List of places hosted by the user
         self.reviews = [] # List of reviews made by the user
         User.users[email] = self # Add the user to the dictionary
         data_manager.save(self) # Save the user to the data manager
     
-    def serialize(self):
-        return {
-            'id': str(self.id),  # Convert UUID to string
-            'created_at': self.created_at.isoformat(),  # Convert datetime to string
-            'updated_at': self.updated_at.isoformat(),  # Convert datetime to string
-            'email': self.email,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            # Don't include the password in the serialized output
-            'places': [str(place.id) for place in self.places],  # Convert list of Place objects to list of IDs
-            'reviews': [str(review.id) for review in self.reviews],  # Convert list of Review objects to list of IDs
-        }
+    def add_place(self, place):
+        if place is not None:
+            self.places.append(place) 
+            data_manager.save(self)
+            data_manager.save(place)
+            print(f"Added place: {place} to user: {self.id}, user places: {self.places}")
 
-    def update_profile(self, email=None, password=None, first_name=None, last_name=None):
+    def add_review(self, review):
+        if isinstance(review, str):
+            review = Review.load(review)
+        self.reviews.append(review)
+        data_manager.save(self)
+        data_manager.save(review)
+
+    def update_profile(self, email=None, password=None, first_name=None, last_name=None, 
+                       city_id=None, country_id=None):
         """
         Update the user's profile.
 
@@ -59,6 +67,8 @@ class User:
             password (str, optional): The new password. Defaults to None.
             first_name (str, optional): The new first name. Defaults to None.
             last_name (str, optional): The new last name. Defaults to None.
+            country (str, optional): The new country. Defaults to None.
+            city (str, optional): The new city. Defaults to None.
         """
         if email and email != self.email and email in User.users:
             raise ValueError("User with email {} already exists".format(email))  # Check if the new email is already in use
@@ -72,71 +82,58 @@ class User:
             self.first_name = first_name # Update the first name
         if last_name:
             self.last_name = last_name # Update the last name
+        if country_id:
+            self.country_id = country_id # Update the country
+        if city_id:
+            self.city_id = city_id # Update the city
         self.updated_at = datetime.now()
         data_manager.save(self) # Save the updated user to the data manager
 
 
-    def host_place(self, place):
-        """
-        Host a place.
-
-        Args:
-            place (Place): The place to be hosted.
-        """
-        if place.host is not None:
-            raise ValueError("Place is already hosted by a user")
-        self.places.append(place)
-        place.host = self
-        data_manager.save(self) # Save the user to the data manager
-        data_manager.save(place) # Save the place to the data manager
-
-
-    def write_review(self, review):
-        """
-        Write a review.
-
-        Args:
-            review (Review): The review to be written.
-        """
-        self.reviews.append(review) # Add the review to the user's reviews
-        data_manager.save(self) # Save the user to the data manager
-        data_manager.save(review) # Save the review to the data manager
-
-
     @classmethod
-    def load(cls, obj_id): 
-        """
-        Load a user by ID.
-
-        Args:
-            obj_id (uuid.UUID): The ID of the user to be loaded.
-
-        Returns:
-            User: The loaded user.
-        """
-        return data_manager.load(cls, obj_id) # Load the user from the data manager
-
+    def load(cls, obj_id):
+        return data_manager.load(cls, obj_id)
 
     @classmethod
     def load_all(cls):
-        """
-        Load all users.
-
-        Returns:
-            list: A list of all users.
-        """
-        return data_manager.load_all(cls) # Load all users from the data manager
-
-
+        return data_manager.load_all(cls)
+        
     @classmethod
     def delete(cls, obj_id):
-        """
-        Delete a user by ID.
+        user = data_manager.load(cls, obj_id)
+        if user:
+            data_manager.delete(user)
 
-        Args:
-            obj_id (uuid.UUID): The ID of the user to be deleted.
-        """
-        user = data_manager.load(cls, obj_id) # Load the user
-        if user: # Check if the user exists
-            del User.users[user.email] # Remove the user from the dictionary
-            data_manager.delete(user) # Delete the user from the data manager
+    @classmethod
+    def from_dict(cls, data):
+        user = cls(
+            data['email'],
+            data['password'],
+            data['first_name'],
+            data['last_name'],
+            data.get('city_id'),
+            data.get('country_id')
+        )
+        user.id = uuid.UUID(data['id'])
+        user.created_at = datetime.fromisoformat(data['created_at'])
+        user.updated_at = datetime.fromisoformat(data['updated_at'])
+        user.places = [Place.from_dict(place) for place in data.get('places', [])]
+        user.reviews = [Review.from_dict(review) for review in data.get('reviews', [])]
+        return user
+
+    def serialize(self):
+        print(f"Converting user to dict: {self.id}")
+        print(f"User places before conversion: {self.places}")
+        return {
+            'id': str(self.id),
+            'email': self.email,
+            'password': self.password, # Do not include the password in the response, just for testing purposes
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'city_id': str(self.city_id) if hasattr(self, 'city_id') else None,
+            'country_id': str(self.country_id) if hasattr(self, 'country_id') else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'places': [place.serialize() for place in (data_manager.load(Place, place_id) for place_id in self.places if place_id is not None) if place is not None],  # Convert Place objects to dictionaries
+            'reviews': [review.serialize() for review in (data_manager.load(Review, review_id) for review_id in self.reviews if review_id is not None) if review is not None]  # Convert Review objects to dictionaries
+        }

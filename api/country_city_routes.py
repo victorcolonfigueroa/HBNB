@@ -1,246 +1,129 @@
-from flask import request, jsonify, abort
-from flask_restx import Resource, fields
-from api import api
+from flask import request, abort
+from flask_restx import Namespace, Resource, fields
 from models.country import Country
 from models.city import City
-from werkzeug.exceptions import HTTPException
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage) 
+ns_country_city = Namespace('country_city', description='Country and City operations')
 
-# Define a namespace for countries and cities
-ns_country = api.namespace('countries', description='Country operations')
-ns_city = api.namespace('cities', description='City operations')
-
-# Define models for countries and cities
-country_model = api.model('Country', {
+country_model = ns_country_city.model('Country', {
     'id': fields.String(readOnly=True, description='The unique identifier of a country'),
     'name': fields.String(required=True, description='The country name'),
-    'code': fields.String(required=True, description='The country ISO code'),
+    'code': fields.String(required=True, description='The country code'),
     'created_at': fields.DateTime(readOnly=True, description='The date and time the country was created'),
-    'updated_at': fields.DateTime(readOnly=True, description='The date and time the country was last updated')
+    'updated_at': fields.DateTime(readOnly=True, description='The date and time the country was last updated'),
+    'cities': fields.List(fields.Nested(ns_country_city.model('City', {
+        'id': fields.String(readOnly=True, description='The unique identifier of a city'),
+        'name': fields.String(required=True, description='The city name'),
+        'country_id': fields.String(required=True, description='The country ID'),
+        'created_at': fields.DateTime(readOnly=True, description='The date and time the city was created'),
+        'updated_at': fields.DateTime(readOnly=True, description='The date and time the city was last updated')
+    })))
 })
 
-city_model = api.model('City', {
+city_model = ns_country_city.model('City', {
     'id': fields.String(readOnly=True, description='The unique identifier of a city'),
     'name': fields.String(required=True, description='The city name'),
-    'country_code': fields.String(required=True, description='The ISO code of the country'),
+    'country_id': fields.String(required=True, description='The country ID'),
     'created_at': fields.DateTime(readOnly=True, description='The date and time the city was created'),
     'updated_at': fields.DateTime(readOnly=True, description='The date and time the city was last updated')
 })
 
 def validate_city_data(data):
-    """
-    Validates city data. Checks if the name and country code are present and valid.
-    
-    Args:
-        data (dict): The city data to validate.
-        
-    Raises:
-        HTTPException: If the name or country code are not valid, or the country code does not exist.
-    """
     if 'name' not in data or not isinstance(data['name'], str) or not data['name'].strip():
         abort(400, description="City name must be a non-empty string")
-    if 'country_code' not in data or not isinstance(data['country_code'], str) or not data['country_code'].strip():
-        abort(400, description="Country code must be a non-empty string")
-    country = Country.load_by_code(data['country_code'])
+    if 'country_id' not in data or not isinstance(data['country_id'], str):
+        abort(400, description="Country ID must be provided and must be a string")
+    country = Country.load(data['country_id'])
     if not country:
-        abort(400, description="Invalid country code")
+        abort(400, description="Invalid country ID")
 
-@ns_country.route('/')
+@ns_country_city.route('/countries')
 class CountryList(Resource):
-    """
-    Resource for handling the HTTP methods for the /countries route.
-    """
-    @ns_country.doc('list_countries')
-    @ns_country.marshal_list_with(country_model)
+    @ns_country_city.doc('list_countries')
+    @ns_country_city.marshal_list_with(country_model)
     def get(self):
-        """
-        Returns a list of all countries.
-        
-        Returns:
-            A list of countries.
-        """
         countries = Country.load_all()
-        return countries
-    
-    @ns_country.doc('create_country')
-    @ns_country.expect(country_model)
-    @ns_country.marshal_with(country_model, code=201)
+        return [country.to_dict() for country in countries]
+
+    @ns_country_city.doc('create_country')
+    @ns_country_city.expect(country_model)
+    @ns_country_city.marshal_with(country_model, code=201)
     def post(self):
-        """
-        Creates a new country with the data provided in the request.
-        Returns:
-            The created country, with a status code of 201.
-            
-        Raises:
-            HTTPException: If the request payload is not JSON, or the country data is not valid.
-        """
         if not request.json:
             abort(400, description="Request payload must be JSON")
         data = request.json
-        if 'name' not in data or not isinstance(data['name'], str) or not data['name'].strip():
-            abort(400, description="Country name must be a non-empty string")
-        if 'code' not in data or not isinstance(data['code'], str) or not data['code'].strip():
-            abort(400, description="Country code must be a non-empty string")
-        try:
-            country = Country(name=data['name'], code=data['code'])
-            data_manager.save(country)  # Assuming you have a save method to persist the country
-            return country, 201
-        except ValueError as e:
-            abort(400, description=str(e))
+        country = Country(
+            name=data['name'],
+            code=data['code']
+        )
+        return country.to_dict(), 201
 
-@ns_country.route('/<string:country_code>')
-@ns_country.response(404, 'Country not found')
-@ns_country.param('country_code', 'The country ISO code')
+@ns_country_city.route('/countries/<string:country_id>')
+@ns_country_city.response(404, 'Country not found')
+@ns_country_city.param('country_id', 'The country identifier')
 class CountryResource(Resource):
-    """
-    Resource for handling the HTTP methods for the /countries/<country_code> route.
-    """
-    @ns_country.doc('get_country')
-    @ns_country.marshal_with(country_model)
-    def get(self, country_code):
-        """
-        Returns the country with the given ISO code.
-        
-        Args:
-            country_code (str): The ISO code of the country to return.
-            
-        Returns:
-            The country with the given ISO code.
-            
-        Raises:
-            HTTPException: If the country is not found.
-        """
-        country = Country.load_by_code(country_code)
+    @ns_country_city.doc('get_country')
+    @ns_country_city.marshal_with(country_model)
+    def get(self, country_id):
+        country = Country.load(country_id)
         if not country:
             abort(404, description="Country not found")
-        return country
+        return country.to_dict()
 
-@ns_country.route('/<string:country_code>/cities')
-@ns_country.response(404, 'Country not found')
-@ns_country.param('country_code', 'The country ISO code')
-class CountryCities(Resource):
-    """
-    Resource for handling the HTTP methods for the /countries/<country_code>/cities route.
-    """
-    @ns_country.doc('list_country_cities')
-    @ns_country.marshal_list_with(city_model)
-    def get(self, country_code):
-        """
-        Returns a list of all cities in the country with the given ISO code.
-        
-        Args:
-            country_code (str): The ISO code of the country to return the cities for.
-            
-        Returns:
-            A list of cities in the country with the given ISO code.
-            
-        Raises:
-            HTTPException: If the country is not found.
-        """
-        country = Country.load_by_code(country_code)
+@ns_country_city.route('/countries/<string:country_id>/cities')
+@ns_country_city.response(404, 'Country not found')
+@ns_country_city.param('country_id', 'The country identifier')
+class CountryCityList(Resource):
+    @ns_country_city.doc('list_cities_for_country')
+    @ns_country_city.marshal_list_with(city_model)
+    def get(self, country_id):
+        country = Country.load(country_id)
         if not country:
             abort(404, description="Country not found")
-        cities = [city for city in City.load_all() if city.country_code == country_code]
-        return cities
+        cities = [City.load(city_id) for city_id in country.cities]
+        return [city.to_dict() for city in country.cities]
 
-@ns_city.route('/')
+    @ns_country_city.doc('create_city_for_country')
+    @ns_country_city.expect(city_model)
+    @ns_country_city.marshal_with(city_model, code=201)
+    def post(self, country_id):
+        if not request.json:
+            abort(400, description="Request payload must be JSON")
+        data = request.json
+        data['country_id'] = country_id
+        validate_city_data(data)
+        city = City(
+            name=data['name'],
+            country_id=data['country_id']
+        )
+        country = Country.load(country_id)
+        country.add_city(city)
+        return city.to_dict(), 201
+
+@ns_country_city.route('/cities')
 class CityList(Resource):
-    """
-    Resource for handling the HTTP methods for the /cities route.
-    """
-    @ns_city.doc('list_cities')
-    @ns_city.marshal_list_with(city_model)
+    @ns_country_city.doc('list_cities')
+    @ns_country_city.marshal_list_with(city_model)
     def get(self):
-        """
-        Returns a list of all cities.
-        
-        Returns:
-            A list of cities.
-        """
         cities = City.load_all()
-        return cities
+        return [city.to_dict() for city in cities]
 
-    @ns_city.doc('create_city')
-    @ns_city.expect(city_model)
-    @ns_city.marshal_with(city_model, code=201)
-    def post(self):
-        """
-        Creates a new city with the data provided in the request.
-        
-        Returns:
-            The created city, with a status code of 201.
-            
-        Raises:
-            HTTPException: If the request payload is not JSON, the city data is not valid, or the city name already exists in the country.
-        """
-        if not request.json:
-            abort(400, description="Request payload must be JSON")
-        data = request.json
-        validate_city_data(data)
-
-        name = data['name']
-        country_code = data['country_code']
-
-        for city in City.load_all():
-            if city.name == name and city.country_code == country_code:
-                abort(409, description="City name already exists in this country")
-
-        try:
-            country = Country.load_by_code(country_code)
-            city = City(name=name, country_code=country.code)
-            data_manager.save(city)
-            return city, 201
-        except ValueError as e:
-            abort(400, description=str(e))
-
-@ns_city.route('/<string:city_id>')
-@ns_city.response(404, 'City not found')
-@ns_city.param('city_id', 'The city identifier')
+@ns_country_city.route('/cities/<string:city_id>')
+@ns_country_city.response(404, 'City not found')
+@ns_country_city.param('city_id', 'The city identifier')
 class CityResource(Resource):
-    """
-    Resource for handling the HTTP methods for the /cities/<city_id> route.
-    """
-    @ns_city.doc('get_city')
-    @ns_city.marshal_with(city_model)
+    @ns_country_city.doc('get_city')
+    @ns_country_city.marshal_with(city_model)
     def get(self, city_id):
-        """
-        Returns the city with the given ID.
-        
-        Args:
-            city_id (str): The ID of the city to return.
-            
-        Returns:
-            The city with the given ID.
-            
-        Raises:
-            HTTPException: If the city is not found.
-        """
         city = City.load(city_id)
         if not city:
             abort(404, description="City not found")
-        return city
+        return city.to_dict()
 
-    @ns_city.doc('update_city')
-    @ns_city.expect(city_model)
-    @ns_city.marshal_with(city_model)
+    @ns_country_city.doc('update_city')
+    @ns_country_city.expect(city_model)
+    @ns_country_city.marshal_with(city_model)
     def put(self, city_id):
-        """
-        Updates the city with the given ID with the data provided in the request.
-        
-        Args:
-            city_id (str): The ID of the city to update.
-            
-        Returns:
-            The updated city.
-            
-        Raises:
-            HTTPException: If the city is not found, the request payload is not JSON, the city data is not valid, or the city name already exists in the country.
-        """
         city = City.load(city_id)
         if not city:
             abort(404, description="City not found")
@@ -250,43 +133,18 @@ class CityResource(Resource):
 
         data = request.json
         validate_city_data(data)
+        city.update_details(
+            name=data['name'],
+            country_id=data['country_id'] if 'country_id' in data else city.country_id
+        )
+        return city.to_dict()
 
-        name = data.get('name')
-        country_code = data.get('country_code')
-
-        if (name and name != city.name) or (country_code and country_code != city.country_code):
-            for c in City.load_all():
-                if c.name == name and c.country_code == country_code:
-                    abort(409, description="City name already exists in this country")
-
-        try:
-            country = Country.load_by_code(country_code)
-            city.update_details(name=name, country_code=country.code)
-            data_manager.save(city)
-            return city
-        except ValueError as e:
-            abort(400, description=str(e))
-
-    @ns_city.doc('delete_city')
-    @ns_city.response(204, 'City deleted')
+    @ns_country_city.doc('delete_city')
+    @ns_country_city.response(204, 'City deleted')
     def delete(self, city_id):
-        """
-        Deletes the city with the given ID.
-        
-        Args:
-            city_id (str): The ID of the city to delete.
-            
-        Returns:
-            An empty response with a status code of 204.
-            
-        Raises:
-            HTTPException: If the city is not found.
-        """
-        try:
-            city = City.load(city_id)
-            if city is None:
-                abort(404, description="City not found")
-            city.delete(city_id)
-            return '', 204
-        except Exception as e:
-            abort(500, description=str(e))
+        city = City.load(city_id)
+        if not city:
+            abort(404, description="City not found")
+
+        City.delete(city_id)
+        return '', 204

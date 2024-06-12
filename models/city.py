@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from models.place import Place
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
+from models.country import Country
 
 # Create an instance of DataManager
 storage = FileStorage()
@@ -11,7 +13,9 @@ class City:
     """
     City class represents a city in the system.
     """
-    def __init__(self, name, country_code):
+    cities = {} # Dictionary to store all cities
+
+    def __init__(self, name, country_id):
         """
         Initialize a new City instance.
 
@@ -23,9 +27,8 @@ class City:
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self.name = name
-        self.country_code = country_code
+        self.country_id = country_id
         self.places = []  # List of places in the city
-        self.users = []  # List of users in the city
         data_manager.save(self) # Save the city to the data manager
 
     def add_place(self, place):
@@ -36,12 +39,19 @@ class City:
             place (Place): The place to be added.
         """
         self.places.append(place) # Add the place to the list of places
-        place.city = self # Set the city of the place to this city
         data_manager.save(self) # Save the city to the data manager
         data_manager.save(place) # Save the place to the data manager
 
-    @classmethod
-    def load(cls, obj_id):
+    def update_details(self, name=None, country_id=None):
+        if name:
+            self.name = name # Update the 'name' attribute
+        if country_id:
+            self.country_id = country_id # Update the 'country_id' attribute
+        self.updated_at = datetime.now() # Update the 'updated_at' attribute
+        data_manager.save(self) # Save the city to the data manager
+
+    @staticmethod
+    def load(obj_id):
         """
         Load a city by ID.
 
@@ -51,7 +61,7 @@ class City:
         Returns:
             City: The loaded city.
         """
-        return data_manager.load(cls, obj_id) # Load the city with the given id
+        return data_manager.load(City, obj_id) # Load the city with the given id
     
     @classmethod
     def load_all(cls):
@@ -87,10 +97,11 @@ class City:
             City: The created city instance.
         """
         try:
-            city = cls(data['name'], data['country'])
+            city = cls(data['name'], data['country_id'])
             city.id = uuid.UUID(data['id'])
             city.created_at = datetime.fromisoformat(data['created_at'])
             city.updated_at = datetime.fromisoformat(data['updated_at'])
+            city.places = [Place.from_dict(place) for place in data.get('places', [])]
         except KeyError as e:
             raise ValueError(f"Missing key in data dictionary: {e}")
         except ValueError as e:
@@ -107,7 +118,8 @@ class City:
         return {
             'id': str(self.id), # Convert the 'id' to a string
             'name': self.name, # Use the 'name' attribute
-            'country': self.country_code, # Use the 'country' attribute
+            'country_id': str(self.country_id) if self.country_id else None, # Convert 'country_id' to a string if it exists
             'created_at': self.created_at.isoformat(), # Convert 'created_at' to an ISO 8601 string
-            'update_at': self.updated_at.isoformat()  # Convert 'updated_at' to an ISO 8601 string
+            'updated_at': self.updated_at.isoformat(),  # Convert 'updated_at' to an ISO 8601 string
+            'places': [place.to_dict() for place in self.places] # Serialize the list of places
         }

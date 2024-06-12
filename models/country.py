@@ -11,7 +11,9 @@ class Country:
     """
     Country class represents a country in the system.
     """
-    def __init__(self, name, code):
+    countries = {} # Dictionary to store all countries
+
+    def __init__(self, name, code, cities=None):
         """
         Initialize a new Country instance.
 
@@ -23,7 +25,8 @@ class Country:
         self.updated_at = datetime.now()
         self.name = name
         self.code = code
-        self.cities = [] # List of cities in the country
+        Country.countries[self.id] = self # Add the country to the dictionary
+        self.cities = cities if cities is not None else [] # List of cities in the country
         data_manager.save(self) # Save the country to the data manager
 
     
@@ -35,7 +38,7 @@ class Country:
         Args:
             city (City): The city to be added.
         """
-        self.cities.append(city) # Add the city to the list of cities
+        self.cities.append(city.id) # Add the city to the list of cities
         data_manager.save(self) # Save the country to the data manager
         data_manager.save(city) # Save the city to the data manager
 
@@ -90,6 +93,10 @@ class Country:
             country.id = uuid.UUID(data['id'])
             country.created_at = datetime.fromisoformat(data['created_at'])
             country.updated_at = datetime.fromisoformat(data['updated_at'])
+
+            from models.city import City
+            country.cities = [City.from_dict(city) for city in data.get('cities', [])]  # Deserialize cities
+
         except KeyError as e:
             raise ValueError(f"Missing key in data dictionary: {e}")
         except ValueError as e:
@@ -103,13 +110,16 @@ class Country:
         Returns:
             dict: The dictionary containing country data.
         """
+        from models.city import City
+
         return {
             'id': str(self.id),
             'name': self.name,
             'code': self.code,
             'created_at': self.created_at.isoformat(),
-            'update_at': self.updated_at.isoformat(),
-            'cities': [city.to_dict() for city in self.cities]  # Serialize cities
+            'updated_at': self.updated_at.isoformat(),
+            # Serialize cities
+            'cities': [city.to_dict() for city in (data_manager.load(City, city_id) for city_id in self.cities) if city is not None]
         }
 
     @classmethod
