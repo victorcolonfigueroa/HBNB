@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from persistence.data_manager import DataManager
 from persistence.file_storage import FileStorage
-from models.Base_model import BaseModel
+from base_model import BaseModel
 # Create an instance of DataManager
 storage = FileStorage()
 data_manager = DataManager(storage)
@@ -93,7 +93,7 @@ class User(BaseModel):
 
 
     @classmethod
-    def load(cls, obj_id): 
+    def load(cls, obj_id):
         """
         Load a user by ID.
 

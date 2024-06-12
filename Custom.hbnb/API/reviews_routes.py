@@ -2,11 +2,10 @@ from flask import Flask, request, jsonify, abort, Blueprint #type: ignore
 from flask_restx import Resource, Namespace, Api, fields #type: ignore
 from api import api #type: ignore
 from model.reviewscls import Reviews
-from model.placescls import Places
+from model.placescls import Place
 from model.usercls import User
 from persistence.data_management import DataManager
 from persistence.file_storage import FileStorage
-'''finish this file ASAP!!!'''
 
 app = Flask(__name__)
 api = Api(app)
