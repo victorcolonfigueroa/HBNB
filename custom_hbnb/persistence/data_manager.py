@@ -14,21 +14,21 @@ class DataManager(IPersistenceManager):
         """
         self.storage = storage
 
-    def save(self, obj):
+    def save(self):
         """
         Save an object to the storage.
 
         :param obj: The object to be saved.
         """
-        self.storage.save(obj)
+        self.storage.save()
 
-    def delete(self, obj):
+    def delete(self):
         """
         Delete an object from the storage.
 
         :param obj: The object to be deleted.
         """
-        self.storage.delete(obj)
+        self.storage.delete()
 
     def load(self, cls, obj_id):
         """
