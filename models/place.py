@@ -1,24 +1,31 @@
-import uuid
-from datetime import datetime
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
+from models.base_model import BaseModel
 from models.review import Review
 from models.amenity import Amenity
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
-
-class Place:
+class Place(BaseModel):
     """
-    Place class represents a place in the system.
+    Represents a place with various attributes such as name, description, address, etc.
     """
-    places = {}  # Dictionary to store all places
+    def __init__(self, name, description, address, city_id, latitude, longitude, host_id, number_of_rooms, number_of_bathrooms, price_per_night, max_guests, amenity_ids, *args, **kwargs):
+        """
+        Initialize the Place with various attributes.
 
-    def __init__(self, name, description, address, city_id, latitude, longitude, host_id, number_of_rooms, number_of_bathrooms, price_per_night, max_guests, amenity_ids):
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        :param name: The name of the place
+        :param description: The description of the place
+        :param address: The address of the place
+        :param city_id: The ID of the city the place is in
+        :param latitude: The latitude of the place
+        :param longitude: The longitude of the place
+        :param host_id: The ID of the host of the place
+        :param number_of_rooms: The number of rooms in the place
+        :param number_of_bathrooms: The number of bathrooms in the place
+        :param price_per_night: The price per night to stay at the place
+        :param max_guests: The maximum number of guests the place can accommodate
+        :param amenity_ids: The IDs of the amenities the place has
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
+        """
+        super().__init__(*args, **kwargs)
         self.name = name
         self.description = description
         self.address = address
@@ -31,15 +38,56 @@ class Place:
         self.price_per_night = price_per_night
         self.max_guests = max_guests
         self.amenity_ids = amenity_ids
-        self.review = []
-        data_manager.save(self)
+        self.reviews = [] # List of Review instances
+        self.amenities = [] # List of Amenity instances
+        self.host = None
+        self.save()
 
     def add_review(self, review):
-        self.reviews.append(review)
-        data_manager.save(self)
-        data_manager.save(review)
+        """
+        Add a review to the place.
+
+        :param review: The review to add
+        """
+        if isinstance(review, str):
+            review = Review.load(review)
+        if review and review not in self.reviews:
+            if review.review_author == self.host:
+                raise ValueError("A host cannot review their own listing")
+            self.reviews.append(review)
+            self.save()
+            review.save()
+
+    def add_amenity(self, amenity):
+        """
+        Add an amenity to the place.
+
+        :param amenity: The amenity to add
+        """
+        if isinstance(amenity, str):
+            amenity = Amenity.load(amenity)
+        if amenity and amenity not in self.amenities:
+            self.amenities.append(amenity)
+            self.save()
+            amenity.add_place(self)
 
     def update_details(self, name=None, description=None, address=None, city_id=None, latitude=None, longitude=None, host_id=None, number_of_rooms=None, number_of_bathrooms=None, price_per_night=None, max_guests=None, amenity_ids=None):
+        """
+        Update the details of the place.
+
+        :param name: The new name of the place
+        :param description: The new description of the place
+        :param address: The new address of the place
+        :param city_id: The new ID of the city the place is in
+        :param latitude: The new latitude of the place
+        :param longitude: The new longitude of the place
+        :param host_id: The new ID of the host of the place
+        :param number_of_rooms: The new number of rooms in the place
+        :param number_of_bathrooms: The new number of bathrooms in the place
+        :param price_per_night: The new price per night to stay at the place
+        :param max_guests: The new maximum number of guests the place can accommodate
+        :param amenity_ids: The new IDs of the amenities the place has
+        """
         if name:
             self.name = name
         if description:
@@ -52,8 +100,8 @@ class Place:
             self.latitude = latitude
         if longitude:
             self.longitude = longitude
-        if host_id:
-            self.host_id = host_id
+        if host_id and self.host_id != host_id:
+            raise ValueError("Listing already has a host")
         if number_of_rooms:
             self.number_of_rooms = number_of_rooms
         if number_of_bathrooms:
@@ -64,48 +112,16 @@ class Place:
             self.max_guests = max_guests
         if amenity_ids is not None:
             self.amenity_ids = amenity_ids
-        self.updated_at = datetime.now()
-        data_manager.save(self)
-
-    @classmethod
-    def load(cls, obj_id):
-        return data_manager.load(cls, obj_id)
-
-    @classmethod
-    def load_all(cls):
-        return data_manager.load_all(cls)
-
-    @classmethod
-    def delete(cls, obj_id):
-        place = data_manager.load(cls, obj_id)
-        if place:
-            data_manager.delete(place)
-
-    @classmethod
-    def from_dict(cls, data):
-        place = cls(
-            name=data['name'],
-            description=data['description'],
-            address=data['address'],
-            city_id=data['city_id'],
-            latitude=data['latitude'],
-            longitude=data['longitude'],
-            host_id=data['host_id'],
-            number_of_rooms=data['number_of_rooms'],
-            number_of_bathrooms=data['number_of_bathrooms'],
-            price_per_night=data['price_per_night'],
-            max_guests=data['max_guests'],
-            amenity_ids=data['amenity_ids']
-        )
-        place.id = uuid.UUID(data['id'])
-        place.created_at = datetime.fromisoformat(data['created_at'])
-        place.updated_at = datetime.fromisoformat(data['updated_at'])
-        place.reviews = [Review.from_dict(review) for review in data.get('reviews', [])]
-        return place
+        self.save()
 
     def to_dict(self):
-        return {
-            'id': str(self.id),
+        """
+        Convert the Place to a dictionary.
+
+        :return: The Place as a dictionary
+        """
+        data = super().to_dict()
+        data.update({
             'name': self.name,
             'description': self.description,
             'address': self.address,
@@ -118,7 +134,36 @@ class Place:
             'price_per_night': self.price_per_night,
             'max_guests': self.max_guests,
             'amenity_ids': [str(amenity_id) for amenity_id in self.amenity_ids] if self.amenity_ids else None,
-            'reviews': [review.to_dict() for review in self.reviews],
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
+            'reviews': [review.to_dict() for review in self.reviews if isinstance(review, Review)],
+            'amenities': [amenity.to_dict() for amenity in self.amenities]
+        })
+        return data
+
+    @classmethod
+    def from_dict(cls, data):
+        """
+        Create a Place from a dictionary.
+
+        :param data: The dictionary to create the Place from
+        :return: The created Place
+        """
+        place = cls(
+            name=data['name'],
+            description=data['description'],
+            address=data['address'],
+            city_id=data['city_id'],
+            latitude=data['latitude'],
+            longitude=data['longitude'],
+            host_id=data['host_id'],
+            number_of_rooms=data['number_of_rooms'],
+            number_of_bathrooms=data['number_of_bathrooms'],
+            price_per_night=data['price_per_night'],
+            max_guests=data['max_guests'],
+            amenity_ids=data['amenity_ids'],
+            id=data['id'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )
+        place.reviews = [Review.from_dict(review) if isinstance(review, dict) else review for review in data.get('reviews', [])]
+        place.amenities = [Amenity.from_dict(amenity) if isinstance(amenity, dict) else amenity for amenity in data.get('amenities', [])]
+        return place

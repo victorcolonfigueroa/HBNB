@@ -1,65 +1,71 @@
-import uuid
-from datetime import datetime
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
+from models.base_model import BaseModel
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
-
-class Review:
+class Review(BaseModel):
     """
-    Review class represents a review in the system.
+    Represents a review with a place ID, user ID, rating, and comment.
     """
-    reviews = [] # List of all reviews in the system
 
-    def __init__(self, text, rating, user_id, place_id):
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
-        self.text = text
-        self.rating = rating
-        self.user_id = user_id
+    def __init__(self, place_id, user_id, rating, comment, *args, **kwargs):
+        """
+        Initialize the Review with a place ID, user ID, rating, comment, and optional arguments.
+
+        :param place_id: The ID of the place the review is for
+        :param user_id: The ID of the user who wrote the review
+        :param rating: The rating given in the review
+        :param comment: The comment written in the review
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
+        """
+        super().__init__(*args, **kwargs)
         self.place_id = place_id
-        data_manager.save(self)
+        self.user_id = user_id
+        self.rating = rating
+        self.comment = comment
+        self.review_author = None
+        self.save()
 
-    def update_details(self, text=None, rating=None):
-        if text:
-            self.text = text
+    def update_details(self, rating=None, comment=None):
+        """
+        Update the details of the review.
+
+        :param rating: The new rating for the review
+        :param comment: The new comment for the review
+        """
         if rating:
             self.rating = rating
-        self.updated_at = datetime.now()
-        data_manager.save(self)
+        if comment:
+            self.comment = comment
+        self.save()
 
-    @classmethod
-    def load(cls, obj_id):
-        return data_manager.load(cls, obj_id)
+    def to_dict(self):
+        """
+        Convert the Review to a dictionary.
 
-    @classmethod
-    def load_all(cls):
-        return data_manager.load_all(cls)
-
-    @classmethod
-    def delete(cls, obj_id):
-        review = data_manager.load(cls, obj_id)
-        if review:
-            data_manager.delete(review)
+        :return: The Review as a dictionary
+        """
+        data = super().to_dict()
+        data.update({
+            'place_id': str(self.place_id),
+            'user_id': str(self.user_id),
+            'rating': self.rating,
+            'comment': self.comment
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data):
-        review = cls(data['text'], data['rating'], data['user_id'], data['place_id'])
-        review.id = uuid.UUID(data['id'])
-        review.created_at = datetime.fromisoformat(data['created_at'])
-        review.updated_at = datetime.fromisoformat(data['updated_at'])
-        return review
+        """
+        Create a Review from a dictionary.
 
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'text': self.text,
-            'rating': self.rating,
-            'user_id': str(self.user_id),
-            'place_id': str(self.place_id),
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
+        :param data: The dictionary to create the Review from
+        :return: The created Review
+        """
+        return cls(
+            place_id=data['place_id'],
+            user_id=data['user_id'],
+            rating=data['rating'],
+            comment=data['comment'],
+            id=data['id'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )

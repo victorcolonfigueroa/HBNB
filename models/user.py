@@ -1,139 +1,138 @@
-import uuid
-from datetime import datetime
-from models.review import Review
+from models.base_model import BaseModel
 from models.place import Place
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
+from models.review import Review
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
-
-class User:
+class User(BaseModel):
     """
-    User class represents a user in the system.
+    Represents a user with an email, password, first name, last name, city ID, country ID, places, and reviews.
     """
-    users = {} # Dictionary to store all users
 
-    def __init__(self, email, password, first_name, last_name, city_id=None, country_id=None):
-        """
-        Initialize a new User instance.
+    user_email = {} # class variable to store email to user mapping
 
-        Args:
-            email (str): The user's email.
-            password (str): The user's password.
-            first_name (str): The user's first name.
-            last_name (str): The user's last name.
-            country (str, optional): The user's country. Defaults to None.
-            city (str, optional): The user's city. Defaults to None.
+    def __init__(self, email, password, first_name, last_name, city_id=None, country_id=None, *args, **kwargs):
         """
-        if email in User.users:
-            raise ValueError("User with email {} already exists".format(email))
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now() 
-        self.updated_at = datetime.now()
+        Initialize the User with an email, password, first name, last name, optional city ID, optional country ID, and optional arguments.
+
+        :param email: The email of the user
+        :param password: The password of the user
+        :param first_name: The first name of the user
+        :param last_name: The last name of the user
+        :param city_id: The city ID of the user
+        :param country_id: The country ID of the user
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
+        """
+        super().__init__(*args, **kwargs)
         self.email = email
         self.password = password
         self.first_name = first_name
         self.last_name = last_name
-        self.country_id = country_id
         self.city_id = city_id
-        self.places = [] # List of places hosted by the user
-        self.reviews = [] # List of reviews made by the user
-        User.users[email] = self # Add the user to the dictionary
-        data_manager.save(self) # Save the user to the data manager
-    
+        self.country_id = country_id
+        self.places = []
+        self.reviews = []
+        User.user_email[email] = self
+        self.save()
+
+    @classmethod
+    def unique_email(cls, email):
+        """
+        Check if an email is unique among all users.
+
+        :param email: The email to check
+        :return: True if the email is unique, False otherwise
+        """
+        users = cls.load_all()
+        return not any(user.email == email for user in users)
+
     def add_place(self, place):
-        if place is not None:
-            self.places.append(place) 
-            data_manager.save(self)
-            data_manager.save(place)
-            print(f"Added place: {place} to user: {self.id}, user places: {self.places}")
+        """
+        Add a place to the user. If the place is not already associated with the user, it is added.
+
+        :param place: The place to add, either as a Place object or a string ID
+        """
+        if isinstance(place, str):
+            place = Place.load(place)
+        if place and place not in self.places:
+            self.places.append(place)
+            self.save()
+            place.save()
 
     def add_review(self, review):
+        """
+        Add a review to the user. If the review is not already associated with the user, it is added.
+
+        :param review: The review to add, either as a Review object or a string ID
+        """
         if isinstance(review, str):
             review = Review.load(review)
-        self.reviews.append(review)
-        data_manager.save(self)
-        data_manager.save(review)
+        if review and review not in self.reviews:
+            self.reviews.append(review)
+            self.save()
+            review.save()  
 
-    def update_profile(self, email=None, password=None, first_name=None, last_name=None, 
-                       city_id=None, country_id=None):
+    def update_details(self, email=None, password=None, first_name=None, last_name=None, city_id=None, country_id=None):
         """
-        Update the user's profile.
+        Update the details of the user.
 
-        Args:
-            email (str, optional): The new email. Defaults to None.
-            password (str, optional): The new password. Defaults to None.
-            first_name (str, optional): The new first name. Defaults to None.
-            last_name (str, optional): The new last name. Defaults to None.
-            country (str, optional): The new country. Defaults to None.
-            city (str, optional): The new city. Defaults to None.
+        :param email: The new email of the user
+        :param password: The new password of the user
+        :param first_name: The new first name of the user
+        :param last_name: The new last name of the user
+        :param city_id: The new city ID of the user
+        :param country_id: The new country ID of the user
         """
-        if email and email != self.email and email in User.users:
-            raise ValueError("User with email {} already exists".format(email))  # Check if the new email is already in use
         if email:
-            del User.users[self.email] # Remove the user from the dictionary
-            self.email = email  # Update the email
-            User.users[self.email] = self  # Add the user back to the dictionary
+            self.email = email
         if password:
-            self.password = password # Update the password
+            self.password = password
         if first_name:
-            self.first_name = first_name # Update the first name
+            self.first_name = first_name
         if last_name:
-            self.last_name = last_name # Update the last name
-        if country_id:
-            self.country_id = country_id # Update the country
+            self.last_name = last_name
         if city_id:
-            self.city_id = city_id # Update the city
-        self.updated_at = datetime.now()
-        data_manager.save(self) # Save the updated user to the data manager
+            self.city_id = city_id
+        if country_id:
+            self.country_id = country_id
+        self.save()
 
+    def to_dict(self):
+        """
+        Convert the User to a dictionary.
 
-    @classmethod
-    def load(cls, obj_id):
-        return data_manager.load(cls, obj_id)
-
-    @classmethod
-    def load_all(cls):
-        return data_manager.load_all(cls)
-        
-    @classmethod
-    def delete(cls, obj_id):
-        user = data_manager.load(cls, obj_id)
-        if user:
-            data_manager.delete(user)
+        :return: The User as a dictionary
+        """
+        data = super().to_dict()
+        data.update({
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'city_id': str(self.city_id) if self.city_id else None,
+            'country_id': str(self.country_id) if self.country_id else None,
+            'places': [place.to_dict() for place in self.places if isinstance(place, Place)],
+            'reviews': [review.to_dict() for review in self.reviews if isinstance(review, Review)]
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data):
-        user = cls(
-            data['email'],
-            data['password'],
-            data['first_name'],
-            data['last_name'],
-            data.get('city_id'),
-            data.get('country_id')
-        )
-        user.id = uuid.UUID(data['id'])
-        user.created_at = datetime.fromisoformat(data['created_at'])
-        user.updated_at = datetime.fromisoformat(data['updated_at'])
-        user.places = [Place.from_dict(place) for place in data.get('places', [])]
-        user.reviews = [Review.from_dict(review) for review in data.get('reviews', [])]
-        return user
+        """
+        Create a User from a dictionary.
 
-    def serialize(self):
-        print(f"Converting user to dict: {self.id}")
-        print(f"User places before conversion: {self.places}")
-        return {
-            'id': str(self.id),
-            'email': self.email,
-            'password': self.password, # Do not include the password in the response, just for testing purposes
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'city_id': str(self.city_id) if hasattr(self, 'city_id') else None,
-            'country_id': str(self.country_id) if hasattr(self, 'country_id') else None,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'places': [place.serialize() for place in (data_manager.load(Place, place_id) for place_id in self.places if place_id is not None) if place is not None],  # Convert Place objects to dictionaries
-            'reviews': [review.serialize() for review in (data_manager.load(Review, review_id) for review_id in self.reviews if review_id is not None) if review is not None]  # Convert Review objects to dictionaries
-        }
+        :param data: The dictionary to create the User from
+        :return: The created User
+        """
+        user = cls(
+            email=data['email'],
+            password=data['password'],
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            city_id=data.get('city_id'),
+            country_id=data.get('country_id'),
+            id=data['id'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )
+        user.places = [Place.from_dict(place) if isinstance(place, dict) else place for place in data.get('places', [])]
+        user.reviews = [Review.from_dict(review) if isinstance(review, dict) else review for review in data.get('reviews', [])]
+        return user

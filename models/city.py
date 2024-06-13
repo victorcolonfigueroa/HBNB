@@ -1,125 +1,67 @@
-import uuid
-from datetime import datetime
+from models.base_model import BaseModel
 from models.place import Place
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
-from models.country import Country
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
-
-class City:
+class City(BaseModel):
     """
-    City class represents a city in the system.
+    Represents a city with a name, country code, and list of places.
     """
-    cities = {} # Dictionary to store all cities
 
-    def __init__(self, name, country_id):
+    def __init__(self, name, country_code, *args, **kwargs):
         """
-        Initialize a new City instance.
+        Initialize the City with a name and country code.
 
-        Args:
-            name (str): The name of the city.
-            country (str): The country where the city is located.
+        :param name: The name of the city
+        :param country_code: The country code of the city
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__(*args, **kwargs)
         self.name = name
-        self.country_id = country_id
-        self.places = []  # List of places in the city
-        data_manager.save(self) # Save the city to the data manager
+        self.country_code = country_code
+        self.places = []
+        self.save()
 
     def add_place(self, place):
         """
         Add a place to the city.
 
-        Args:
-            place (Place): The place to be added.
+        :param place: The place to add, either as a Place object or a string ID
         """
-        self.places.append(place) # Add the place to the list of places
-        data_manager.save(self) # Save the city to the data manager
-        data_manager.save(place) # Save the place to the data manager
+        if isinstance(place, str):
+            place = Place.load(place)
+        if place and place not in self.places:
+            self.places.append(place)
+            self.save()
+            place.save()
 
-    def update_details(self, name=None, country_id=None):
-        if name:
-            self.name = name # Update the 'name' attribute
-        if country_id:
-            self.country_id = country_id # Update the 'country_id' attribute
-        self.updated_at = datetime.now() # Update the 'updated_at' attribute
-        data_manager.save(self) # Save the city to the data manager
+    def to_dict(self):
+        """
+        Convert the City to a dictionary.
 
-    @staticmethod
-    def load(obj_id):
+        :return: The City as a dictionary
         """
-        Load a city by ID.
-
-        Args:
-            obj_id (uuid.UUID): The ID of the city to be loaded.
-
-        Returns:
-            City: The loaded city.
-        """
-        return data_manager.load(City, obj_id) # Load the city with the given id
-    
-    @classmethod
-    def load_all(cls):
-        """
-        Load all cities.
-
-        Returns:
-            list: A list of all cities.
-        """
-        return data_manager.load_all(cls) # Load all cities
-    
-    @classmethod
-    def delete(cls, obj_id):
-        """
-        Delete a city by ID.
-
-        Args:
-            obj_id (uuid.UUID): The ID of the city to be deleted.
-        """
-        city = data_manager.load(cls, obj_id) # Load the city with the given id
-        if city:
-            data_manager.delete(city) # Delete the city from the data manager
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            "country_code": self.country_code,
+            'places': [place.to_dict() for place in self.places if isinstance(place, Place)]
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data):
         """
-        Create a City instance from a dictionary.
+        Create a City from a dictionary.
 
-        Args:
-            data (dict): The dictionary containing city data.
-
-        Returns:
-            City: The created city instance.
+        :param data: The dictionary to create the City from
+        :return: The created City
         """
-        try:
-            city = cls(data['name'], data['country_id'])
-            city.id = uuid.UUID(data['id'])
-            city.created_at = datetime.fromisoformat(data['created_at'])
-            city.updated_at = datetime.fromisoformat(data['updated_at'])
-            city.places = [Place.from_dict(place) for place in data.get('places', [])]
-        except KeyError as e:
-            raise ValueError(f"Missing key in data dictionary: {e}")
-        except ValueError as e:
-            raise ValueError(f"Invalid value in data dictionary: {e}")
+        city = cls(
+            name=data['name'],
+            country_code=data['country_code'],
+            id=data['id'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )
+        city.places = [Place.from_dict(place) if isinstance(place, dict) else place for place in data.get('places', [])]
         return city
-    
-    def to_dict(self):
-        """
-        Convert the City instance to a dictionary.
-
-        Returns:
-            dict: The dictionary containing city data.
-        """
-        return {
-            'id': str(self.id), # Convert the 'id' to a string
-            'name': self.name, # Use the 'name' attribute
-            'country_id': str(self.country_id) if self.country_id else None, # Convert 'country_id' to a string if it exists
-            'created_at': self.created_at.isoformat(), # Convert 'created_at' to an ISO 8601 string
-            'updated_at': self.updated_at.isoformat(),  # Convert 'updated_at' to an ISO 8601 string
-            'places': [place.to_dict() for place in self.places] # Serialize the list of places
-        }

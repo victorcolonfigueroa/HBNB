@@ -1,140 +1,89 @@
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
-import uuid
-from datetime import datetime
+from models.base_model import BaseModel
+from models.city import City
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
+# List of valid ISO 3166-1 alpha-2 country codes
+VALID_ISO_CODES = [
+    "AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR", "AM", "AW", "AU",
+    "AT", "AZ", "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ", "BM", "BT", "BO", "BQ",
+    "BA", "BW", "BV", "BR", "IO", "BN", "BG", "BF", "BI", "CV", "KH", "CM", "CA", "KY",
+    "CF", "TD", "CL", "CN", "CX", "CC", "CO", "KM", "CG", "CD", "CK", "CR", "CI", "HR",
+    "CU", "CW", "CY", "CZ", "DK", "DJ", "DM", "DO", "EC", "EG", "SV", "GQ", "ER", "EE",
+    "SZ", "ET", "FK", "FO", "FJ", "FI", "FR", "GF", "PF", "TF", "GA", "GM", "GE", "DE",
+    "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT", "GG", "GN", "GW", "GY", "HT", "HM",
+    "VA", "HN", "HK", "HU", "IS", "IN", "ID", "IR", "IQ", "IE", "IM", "IL", "IT", "JM",
+    "JP", "JE", "JO", "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB", "LS",
+    "LR", "LY", "LI", "LT", "LU", "MO", "MG", "MW", "MY", "MV", "ML", "MT", "MH", "MQ",
+    "MR", "MU", "YT", "MX", "FM", "MD", "MC", "MN", "ME", "MS", "MA", "MZ", "MM", "NA",
+    "NR", "NP", "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MK", "MP", "NO", "OM",
+    "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH", "PN", "PL", "PT", "PR", "QA", "RO",
+    "RU", "RW", "RE", "BL", "SH", "KN", "LC", "MF", "PM", "VC", "WS", "SM", "ST", "SA",
+    "SN", "RS", "SC", "SL", "SG", "SX", "SK", "SI", "SB", "SO", "ZA", "GS", "SS", "ES",
+    "LK", "SD", "SR", "SJ", "SE", "CH", "SY", "TW", "TJ", "TZ", "TH", "TL", "TG", "TK",
+    "TO", "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US", "UM", "UY",
+    "UZ", "VU", "VE", "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+]
 
-class Country:
+class Country(BaseModel):
     """
-    Country class represents a country in the system.
+    Represents a country with a name, ISO 3166-1 alpha-2 code, and list of cities.
     """
-    countries = {} # Dictionary to store all countries
-
-    def __init__(self, name, code, cities=None):
+    def __init__(self, name, code, *args, **kwargs):
         """
-        Initialize a new Country instance.
+        Initialize the Country with a name and ISO 3166-1 alpha-2 code.
 
-        Args:
-            name (str): The name of the country.
+        :param name: The name of the country
+        :param code: The ISO 3166-1 alpha-2 code of the country
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
         """
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        super().__init__(*args, **kwargs)
+        if code not in VALID_ISO_CODES:
+            raise ValueError(f"Invalid ISO 3166-1 alpha-2 code: {code}")
         self.name = name
         self.code = code
-        Country.countries[self.id] = self # Add the country to the dictionary
-        self.cities = cities if cities is not None else [] # List of cities in the country
-        data_manager.save(self) # Save the country to the data manager
-
-    
+        self.cities = []
+        self.save()
 
     def add_city(self, city):
         """
         Add a city to the country.
 
-        Args:
-            city (City): The city to be added.
+        :param city: The city to add
         """
-        self.cities.append(city.id) # Add the city to the list of cities
-        data_manager.save(self) # Save the country to the data manager
-        data_manager.save(city) # Save the city to the data manager
+        if isinstance(city, str):
+            city = City.load(city)
+        if city and city not in self.cities:
+            self.cities.append(city)
+            self.save()
+            city.save()
 
-    @classmethod
-    def load(cls, obj_id):
+    def to_dict(self):
         """
-        Load a country by ID.
+        Convert the Country to a dictionary.
 
-        Args:
-            obj_id (uuid.UUID): The ID of the country to be loaded.
-
-        Returns:
-            Country: The loaded country.
+        :return: The Country as a dictionary
         """
-        return data_manager.load(cls, obj_id) # Load the country with the given id
-    
-    @classmethod
-    def load_all(cls):
-        """
-        Load all countries.
-
-        Returns:
-            list: A list of all countries.
-        """
-        return data_manager.load_all(cls) # Load all countries
-    
-    @classmethod
-    def delete(cls, obj_id):
-        """
-        Delete a country by ID.
-
-        Args:
-            obj_id (uuid.UUID): The ID of the country to be deleted.
-        """
-        country = data_manager.load(cls, obj_id) # Load the country with the given id
-        if country:
-            data_manager.delete(country) # Delete the country from the data manager
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            'code': self.code,
+            'cities': [city.to_dict() for city in self.cities if isinstance(city, City)]
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data):
         """
-        Create a Country instance from a dictionary.
+        Create a Country from a dictionary.
 
-        Args:
-            data (dict): The dictionary containing country data.
-
-        Returns:
-            Country: The created country instance.
+        :param data: The dictionary to create the Country from
+        :return: The created Country
         """
-        try:
-            country = cls(data['name'], data['code'])
-            country.id = uuid.UUID(data['id'])
-            country.created_at = datetime.fromisoformat(data['created_at'])
-            country.updated_at = datetime.fromisoformat(data['updated_at'])
-
-            from models.city import City
-            country.cities = [City.from_dict(city) for city in data.get('cities', [])]  # Deserialize cities
-
-        except KeyError as e:
-            raise ValueError(f"Missing key in data dictionary: {e}")
-        except ValueError as e:
-            raise ValueError(f"Invalid value in data dictionary: {e}")
+        country = cls(
+            name=data['name'],
+            code=data['code'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )
+        country.cities = [City.from_dict(city) if isinstance(city, dict) else city for city in data.get('cities', [])]
         return country
-    
-    def to_dict(self):
-        """
-        Convert the Country instance to a dictionary.
-
-        Returns:
-            dict: The dictionary containing country data.
-        """
-        from models.city import City
-
-        return {
-            'id': str(self.id),
-            'name': self.name,
-            'code': self.code,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            # Serialize cities
-            'cities': [city.to_dict() for city in (data_manager.load(City, city_id) for city_id in self.cities) if city is not None]
-        }
-
-    @classmethod
-    def load_by_code(cls, code):
-        """
-        Load a country by its code.
-
-        Args:
-            code (str): The code of the country to be loaded.
-
-        Returns:
-            Country: The loaded country.
-        """
-        all_countries = cls.load_all()  # Load all instances of the class
-        for country in all_countries:  # Iterate over each instance
-            if country.code == code: 
-                return country  # If a match is found, return the instance
-        return None  # If no match is found after checking all instances, return None

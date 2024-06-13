@@ -1,55 +1,62 @@
-import uuid
-from datetime import datetime
-from persistence.data_manager import DataManager
-from persistence.file_storage import FileStorage
+from models.base_model import BaseModel
 
-# Create an instance of DataManager
-storage = FileStorage()
-data_manager = DataManager(storage)
+class Amenity(BaseModel):
+    """
+    Represents an amenity with a name and associated places.
+    """
 
-class Amenity:
-    """
-    Amenity class represents an amenity in the system.
-    """
-    def __init__(self, name):
-        self.id = uuid.uuid4()
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+    def __init__(self, name, *args, **kwargs):
+        """
+        Initialize the Amenity with a name and optional arguments.
+
+        :param name: The name of the amenity
+        :param args: Optional positional arguments
+        :param kwargs: Optional keyword arguments
+        """
+        super().__init__(*args, **kwargs)
         self.name = name
-        data_manager.save(self)
+        self.places = []
+        self.save()
 
-    def update_details(self, name=None):
-        if name:
-            self.name = name
-        self.updated_at = datetime.now()
-        data_manager.save(self)
+    def add_place(self, place):
+        """
+        Add a place to the amenity. If the place is not already associated with the amenity, it is added.
 
-    @classmethod
-    def load(cls, obj_id):
-        return data_manager.load(cls, obj_id)
+        :param place: The place to add, either as a Place object or a string ID
+        """
+        from models.place import Place
 
-    @classmethod
-    def load_all(cls):
-        return data_manager.load_all(cls)
+        if isinstance(place, str):
+            place = Place.load(place)
+        if place and place not in self.places:
+            self.places.append(place)
+            self.save()
+            place.save()
 
-    @classmethod
-    def delete(cls, obj_id):
-        amenity = data_manager.load(cls, obj_id)
-        if amenity:
-            data_manager.delete(amenity)
+    def to_dict(self):
+        """
+        Convert the Amenity to a dictionary.
+
+        :return: The Amenity as a dictionary
+        """
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            'places': [place.to_dict() for place in self.places]
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data):
-        amenity = cls(data['name'])
-        amenity.id = uuid.UUID(data['id'])
-        amenity.created_at = datetime.fromisoformat(data['created_at'])
-        amenity.updated_at = datetime.fromisoformat(data['updated_at'])
-        return amenity
+        """
+        Create an Amenity from a dictionary.
 
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'name': self.name,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
+        :param data: The dictionary to create the Amenity from
+        :return: The created Amenity
+        """
+        return cls(
+            name=data['name'],
+            id=data['id'],
+            created_at=data['created_at'],
+            updated_at=data['updated_at']
+        )

@@ -4,11 +4,11 @@ from models.user import User
 from models.city import City
 from models.country import Country
 from models.place import Place
-from api.place_routes import place_model
 from werkzeug.security import generate_password_hash
 
 ns_user = Namespace('users', description='User operations')
 
+# Define the model for a user
 user_model = ns_user.model('User', {
     'id': fields.String(readOnly=True, description='The unique identifier of a user'),
     'email': fields.String(required=True, description='The user email'),
@@ -38,7 +38,7 @@ user_model = ns_user.model('User', {
     }))),
     'reviews': fields.List(fields.Nested(ns_user.model('Review', {
         'id': fields.String(readOnly=True, description='The unique identifier of a review'),
-        'text': fields.String(required=True, description='The review text'),
+        'comment': fields.String(required=True, description='The review text'),
         'rating': fields.Integer(required=True, description='The review rating'),
         'user_id': fields.String(required=True, description='The user ID'),
         'place_id': fields.String(required=True, description='The place ID'),
@@ -63,6 +63,11 @@ def validate_email(email):
     return re.match(email_regex, email) # Return a match object if the email address is valid, None otherwise
 
 def validate_user_data(data):
+    """
+    Validates the user data. If any of the data is invalid, abort with a 400 status code.
+
+    :param data: The data to validate
+    """
     if 'email' not in data or not isinstance(data['email'], str) or not data['email'].strip():
         abort(400, description="Email must be a non-empty string")
     if 'password' not in data or not isinstance(data['password'], str) or not data['password'].strip():
@@ -82,21 +87,39 @@ def validate_user_data(data):
 
 @ns_user.route('/')
 class UserList(Resource):
+    """
+    Resource for getting a list of all users and creating new users.
+    """
     @ns_user.doc('list_users')
     @ns_user.marshal_list_with(user_model)
     def get(self):
+        """
+        Get a list of all users.
+
+        :return: A list of all users
+        """
         users = User.load_all()
-        return [user.serialize() for user in users]
+        return [user.to_dict() for user in users]
 
     @ns_user.doc('create_user')
     @ns_user.expect(user_model)
     @ns_user.marshal_with(user_model, code=201)
     def post(self):
+        """
+        Create a new user.
+
+        :return: The created user
+        """
         if not request.json:
             abort(400, description="Request payload must be JSON")
         data = request.json
         validate_user_data(data)
+        # Check if the email address is already in use
+        if not User.unique_email(data['email']):
+            abort(400, description="Email address is already in use")
+        # Hash the password before storing it
         hashed_password = generate_password_hash(data['password'])
+        # Create the user
         user = User(
             email=data['email'],
             password=hashed_password,
@@ -105,15 +128,24 @@ class UserList(Resource):
             city_id=data.get('city_id'),
             country_id=data.get('country_id')
         )
-        return user.serialize(), 201
+        return user.to_dict(), 201
 
 @ns_user.route('/<string:user_id>')
 @ns_user.response(404, 'User not found')
 @ns_user.param('user_id', 'The user identifier')
 class UserResource(Resource):
+    """
+    Resource for getting, updating, and deleting a single user.
+    """
     @ns_user.doc('get_user')
     @ns_user.marshal_with(user_model)
     def get(self, user_id):
+        """
+        Get a single user.
+
+        :param user_id: The ID of the user to get
+        :return: The user
+        """
         user = User.load(user_id)
         if not user:
             abort(404, description="User not found")
@@ -123,6 +155,12 @@ class UserResource(Resource):
     @ns_user.expect(user_model)
     @ns_user.marshal_with(user_model)
     def put(self, user_id):
+        """
+        Update a single user.
+
+        :param user_id: The ID of the user to update
+        :return: The updated user
+        """
         user = User.load(user_id)
         if not user:
             abort(404, description="User not found")
@@ -145,6 +183,11 @@ class UserResource(Resource):
     @ns_user.doc('delete_user')
     @ns_user.response(204, 'User deleted')
     def delete(self, user_id):
+        """
+        Delete a single user.
+
+        :param user_id: The ID of the user to delete
+        """
         user = User.load(user_id)
         if not user:
             abort(404, description="User not found")
