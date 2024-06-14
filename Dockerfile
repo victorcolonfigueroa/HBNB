@@ -1,30 +1,25 @@
-# Start with an appropriate Alpine Linux base image with Python
+# Use an appropriate base image
 FROM python:3.8-alpine
 
-# Set a directory for the app
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy the application source code into the container
+# Copy the application source code to the container
 COPY . .
 
-# Utilize a requirements.txt to manage Python dependencies
-COPY requirements.txt ./
+# Install the required dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entrypoint script into the Docker image
-COPY entrypoint.sh /entrypoint.sh
+# Create a directory for the file storage and set permissions
+RUN mkdir -p /usr/src/app/storage && \
+    chmod -R 777 /usr/src/app/storage
 
-# Make the script executable
-RUN chmod +x /entrypoint.sh
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
 
-# Set the script as the entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
+# Expose the port the app runs on
+EXPOSE 5000
 
-# Define an environment variable for the port in your Dockerfile
-ENV PORT 8000
-
-# Expose the port
-EXPOSE 8000
-
-# Define a volume in your Dockerfile where your application will store its persistent data
-VOLUME /usr/src/app/data
+# Run the application
+CMD ["flask", "run"]

@@ -135,7 +135,7 @@ class Place(BaseModel):
             'max_guests': self.max_guests,
             'amenity_ids': [str(amenity_id) for amenity_id in self.amenity_ids] if self.amenity_ids else None,
             'reviews': [review.to_dict() for review in self.reviews if isinstance(review, Review)],
-            'amenities': [amenity.to_dict() for amenity in self.amenities]
+            'amenities': [amenity.to_dict() for amenity in self.amenities] if hasattr(self, 'amenities') and self.amenities else None
         })
         return data
 

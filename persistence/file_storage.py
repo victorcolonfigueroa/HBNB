@@ -10,7 +10,7 @@ class FileStorage(IPersistenceManager):
     It uses a JSON file for storing and retrieving data.
     """
 
-    def __init__(self, file_path='file_storage.json'):
+    def __init__(self, file_path='/usr/src/app/file_storage.json'):
         """
         Initialize FileStorage with a file path.
 

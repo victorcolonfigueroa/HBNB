@@ -6,7 +6,7 @@ class City(BaseModel):
     Represents a city with a name, country code, and list of places.
     """
 
-    def __init__(self, name, country_code, *args, **kwargs):
+    def __init__(self, name, country_id, country_code, *args, **kwargs):
         """
         Initialize the City with a name and country code.
 
@@ -17,6 +17,7 @@ class City(BaseModel):
         """
         super().__init__(*args, **kwargs)
         self.name = name
+        self.country_id = country_id
         self.country_code = country_code
         self.places = []
         self.save()
@@ -43,6 +44,7 @@ class City(BaseModel):
         data = super().to_dict()
         data.update({
             'name': self.name,
+            'country_id': str(self.country_id) if self.country_id else None,
             "country_code": self.country_code,
             'places': [place.to_dict() for place in self.places if isinstance(place, Place)]
         })
@@ -58,6 +60,7 @@ class City(BaseModel):
         """
         city = cls(
             name=data['name'],
+            country_id=data['country_id'],
             country_code=data['country_code'],
             id=data['id'],
             created_at=data['created_at'],

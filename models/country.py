@@ -27,7 +27,7 @@ class Country(BaseModel):
     """
     Represents a country with a name, ISO 3166-1 alpha-2 code, and list of cities.
     """
-    def __init__(self, name, code, *args, **kwargs):
+    def __init__(self, name, country_id, code, *args, **kwargs):
         """
         Initialize the Country with a name and ISO 3166-1 alpha-2 code.
 
