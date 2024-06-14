@@ -27,7 +27,7 @@ class Country(BaseModel):
     """
     Represents a country with a name, ISO 3166-1 alpha-2 code, and list of cities.
     """
-    def __init__(self, name, country_id, code, *args, **kwargs):
+    def __init__(self, name, code, *args, **kwargs):
         """
         Initialize the Country with a name and ISO 3166-1 alpha-2 code.
 
@@ -87,3 +87,11 @@ class Country(BaseModel):
         )
         country.cities = [City.from_dict(city) if isinstance(city, dict) else city for city in data.get('cities', [])]
         return country
+
+    @classmethod
+    def load_by_code(cls, code):
+        '''
+        Load a country by its ISO 3166-1 alpha-2 code.
+        '''
+        countries = cls.load_all()
+        return next((country for country in countries if country.code == code), None)

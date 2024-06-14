@@ -27,7 +27,7 @@ def validate_review_data(data):
         abort(400, description="Place ID must be provided and must be a string")
     if 'user_id' not in data or not isinstance(data['user_id'], str):
         abort(400, description="User ID must be provided and must be a string")
-    if 'rating' not in data or not isinstance(data['rating'], int) or not (1 <= data['rating'] <= 5):
+    if 'rating' not in data or not isinstance(data['rating'], int) or not (1 <= data['rating'] <= 10):
         abort(400, description="Rating must be an integer between 1 and 5")
     if 'comment' not in data or not isinstance(data['comment'], str) or not data['comment'].strip():
         abort(400, description="Comment must be a non-empty string")
@@ -75,6 +75,8 @@ class PlaceReviewList(Resource):
         user = User.load(data['user_id'])
         if not user:
             abort(404, description="User not found")
+        
+        print(f"Debug: place.host_id = {place.host_id}, user.id = {user.id}")
         # Ensure the user is not reviewing their own listing
         if place.host_id == user.id:
             abort(400, description="Hosts cannot review their own listings")
@@ -86,6 +88,7 @@ class PlaceReviewList(Resource):
             rating=data['rating'],
             comment=data['comment']
         )
+
         place.add_review(review)
         user.add_review(review)
         return review.to_dict(), 201
@@ -171,3 +174,4 @@ class ReviewResource(Resource):
 
         Review.delete(review_id)
         return '', 204
+

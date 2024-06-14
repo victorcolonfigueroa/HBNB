@@ -15,8 +15,8 @@ user_model = ns_user.model('User', {
     'password': fields.String(required=True, description='The user password'),
     'first_name': fields.String(required=True, description='The user first name'),
     'last_name': fields.String(required=True, description='The user last name'),
-    'city_id': fields.String(description='The city ID'),
-    'country_id': fields.String(description='The country ID'),
+    'city_id': fields.String(description='The city ID the user is associated with'),
+    'country_code': fields.String(description='The country code the user is associated with'),
     'created_at': fields.DateTime(readOnly=True, description='The date and time the user was created'),
     'updated_at': fields.DateTime(readOnly=True, description='The date and time the user was last updated'),
     'places': fields.List(fields.Nested(ns_user.model('Place', {
@@ -80,10 +80,10 @@ def validate_user_data(data):
         city = City.load(data['city_id'])
         if not city:
             abort(400, description="Invalid city ID")
-    if 'country_id' in data:
-        country = Country.load(data['country_id'])
+    if 'country_code' in data:
+        country = Country.load_by_code(data['country_code'])
         if not country:
-            abort(400, description="Invalid country ID")
+            abort(400, description="Invalid country code")
 
 @ns_user.route('/')
 class UserList(Resource):
@@ -119,6 +119,7 @@ class UserList(Resource):
             abort(400, description="Email address is already in use")
         # Hash the password before storing it
         hashed_password = generate_password_hash(data['password'])
+
         # Create the user
         user = User(
             email=data['email'],
@@ -126,7 +127,7 @@ class UserList(Resource):
             first_name=data['first_name'],
             last_name=data['last_name'],
             city_id=data.get('city_id'),
-            country_id=data.get('country_id')
+            country_code=data.get('country_code')
         )
         return user.to_dict(), 201
 
@@ -176,7 +177,7 @@ class UserResource(Resource):
             first_name=data.get('first_name'),
             last_name=data.get('last_name'),
             city_id=data.get('city_id'),
-            country_id=data.get('country_id')
+            country_code=data.get('country_code', user.country_code)
         )
         return user.to_dict()
 

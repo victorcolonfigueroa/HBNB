@@ -9,7 +9,7 @@ class User(BaseModel):
 
     user_email = {} # class variable to store email to user mapping
 
-    def __init__(self, email, password, first_name, last_name, city_id=None, country_id=None, *args, **kwargs):
+    def __init__(self, email, password, first_name, last_name, city_id=None, country_code=None, *args, **kwargs):
         """
         Initialize the User with an email, password, first name, last name, optional city ID, optional country ID, and optional arguments.
 
@@ -28,9 +28,9 @@ class User(BaseModel):
         self.first_name = first_name
         self.last_name = last_name
         self.city_id = city_id
-        self.country_id = country_id
-        self.places = []
-        self.reviews = []
+        self.country_code = country_code
+        self.places = [] # list of places associated with the user
+        self.reviews = [] # list of reviews associated with the user
         User.user_email[email] = self
         self.save()
 
@@ -71,7 +71,7 @@ class User(BaseModel):
             self.save()
             review.save()  
 
-    def update_details(self, email=None, password=None, first_name=None, last_name=None, city_id=None, country_id=None):
+    def update_details(self, email=None, password=None, first_name=None, last_name=None, city_id=None, country_code=None):
         """
         Update the details of the user.
 
@@ -92,8 +92,8 @@ class User(BaseModel):
             self.last_name = last_name
         if city_id:
             self.city_id = city_id
-        if country_id:
-            self.country_id = country_id
+        if country_code:
+            self.country_code = country_code
         self.save()
 
     def to_dict(self):
@@ -108,7 +108,7 @@ class User(BaseModel):
             'first_name': self.first_name,
             'last_name': self.last_name,
             'city_id': str(self.city_id) if hasattr(self, 'city_id') and self.city_id else None,
-            'country_id': str(self.country_id) if hasattr(self, 'country_id') and self.country_id else None,
+            'country_code': self.country_code if hasattr(self, 'country_code') and self.country_code else None,
             'places': [place.to_dict() for place in self.places if isinstance(place, Place)],
             'reviews': [review.to_dict() for review in self.reviews if isinstance(review, Review)]
         })
@@ -128,7 +128,7 @@ class User(BaseModel):
             first_name=data['first_name'],
             last_name=data['last_name'],
             city_id=data.get('city_id'),
-            country_id=data.get('country_id'),
+            country_code=data.get('country_code'),
             id=data['id'],
             created_at=data['created_at'],
             updated_at=data['updated_at']

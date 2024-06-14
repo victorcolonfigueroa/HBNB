@@ -24,8 +24,7 @@ country_model = ns_country_cities.model('Country', {
 city_model = ns_country_cities.model('City', {
     'id': fields.String(readOnly=True, description='The unique identifier of a city'),
     'name': fields.String(required=True, description='The name of the city'),
-    'country_code': fields.String(required=True, description='The ISO 3166-1 alpha-2 code of the country the city belongs to'),
-    'country_id': fields.String(readOnly=True, description='The unique identifier of the country the city belongs to'), 
+    'country_code': fields.String(required=True, description='The ISO 3166-1 alpha-2 code of the country the city belongs to'), 
     'places': fields.List(fields.Nested(ns_country_cities.model('Place', {
         'id': fields.String(readOnly=True, description='The unique identifier of a place'),
         'name': fields.String(required=True, description='The place name'),
