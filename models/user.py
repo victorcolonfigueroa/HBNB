@@ -107,8 +107,8 @@ class User(BaseModel):
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,
-            'city_id': str(self.city_id) if self.city_id else None,
-            'country_id': str(self.country_id) if self.country_id else None,
+            'city_id': str(self.city_id) if hasattr(self, 'city_id') and self.city_id else None,
+            'country_id': str(self.country_id) if hasattr(self, 'country_id') and self.country_id else None,
             'places': [place.to_dict() for place in self.places if isinstance(place, Place)],
             'reviews': [review.to_dict() for review in self.reviews if isinstance(review, Review)]
         })
