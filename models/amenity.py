@@ -33,6 +33,16 @@ class Amenity(BaseModel):
             self.save()
             place.save()
 
+    def update_details(self, name=None):
+        """
+        Update the details of the Amenity instance.
+
+        :param name: The new name of the Amenity. If None, the name will not be updated.
+        """
+        if name:
+            self.name = name
+        self.save()
+
     def to_dict(self):
         """
         Convert the Amenity to a dictionary.

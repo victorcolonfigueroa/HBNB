@@ -51,7 +51,6 @@ class Place(BaseModel):
         """
         if isinstance(review, str):
             review = Review.load(review)
-        print(f"Debug: review.user_id = {review.user_id}, self.host_id = {self.host_id}")
         if str(review.user_id) == str(self.host_id):
             raise ValueError("A host cannot review their own listing")
         if review and review not in self.reviews:
