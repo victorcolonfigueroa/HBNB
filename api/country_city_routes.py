@@ -3,7 +3,7 @@ from flask_restx import Namespace, Resource, fields
 from models.country import Country
 from models.city import City
 
-ns_country_cities = Namespace('countries_cities', description='Country and City operations')
+ns_country_cities = Namespace('country_city', description='Country and City operations')
 
 # Define the model for a Country
 country_model = ns_country_cities.model('Country', {
@@ -24,24 +24,7 @@ country_model = ns_country_cities.model('Country', {
 city_model = ns_country_cities.model('City', {
     'id': fields.String(readOnly=True, description='The unique identifier of a city'),
     'name': fields.String(required=True, description='The name of the city'),
-    'country_code': fields.String(required=True, description='The ISO 3166-1 alpha-2 code of the country the city belongs to'), 
-    'places': fields.List(fields.Nested(ns_country_cities.model('Place', {
-        'id': fields.String(readOnly=True, description='The unique identifier of a place'),
-        'name': fields.String(required=True, description='The place name'),
-        'description': fields.String(required=True, description='The place description'),
-        'address': fields.String(required=True, description='The place address'),
-        'city_id': fields.String(required=True, description='The city ID'),
-        'latitude': fields.Float(required=True, description='The latitude of the place'),
-        'longitude': fields.Float(required=True, description='The longitude of the place'),
-        'host_id': fields.String(required=True, description='The host ID'),
-        'number_of_rooms': fields.Integer(required=True, description='The number of rooms in the place'),
-        'number_of_bathrooms': fields.Integer(required=True, description='The number of bathrooms in the place'),
-        'price_per_night': fields.Float(required=True, description='The price per night'),
-        'max_guests': fields.Integer(required=True, description='The maximum number of guests'),
-        'amenity_ids': fields.List(fields.String, required=True, description='The list of amenity IDs'),
-        'created_at': fields.DateTime(readOnly=True, description='The date and time the place was created'),
-        'updated_at': fields.DateTime(readOnly=True, description='The date and time the place was last updated')
-    }))),
+    'country_code': fields.String(required=True, description='The ISO 3166-1 alpha-2 code of the country the city belongs to'),
     'created_at': fields.DateTime(readOnly=True, description='The date and time the city was created'),
     'updated_at': fields.DateTime(readOnly=True, description='The date and time the city was last updated')
 })

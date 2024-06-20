@@ -41,7 +41,7 @@ class Country(BaseModel):
             raise ValueError(f"Invalid ISO 3166-1 alpha-2 code: {code}")
         self.name = name
         self.code = code
-        self.cities = []
+        self.cities = [City.load(city) if isinstance(city, str) else city for city in kwargs.get('cities', [])]
         self.save()
 
     def add_city(self, city):

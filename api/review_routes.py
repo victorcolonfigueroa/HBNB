@@ -27,7 +27,7 @@ def validate_review_data(data):
         abort(400, description="Place ID must be provided and must be a string")
     if 'user_id' not in data or not isinstance(data['user_id'], str):
         abort(400, description="User ID must be provided and must be a string")
-    if 'rating' not in data or not isinstance(data['rating'], int) or not (1 <= data['rating'] <= 10):
+    if 'rating' not in data or not isinstance(data['rating'], int) or not (1 <= data['rating'] <= 5):
         abort(400, description="Rating must be an integer between 1 and 5")
     if 'comment' not in data or not isinstance(data['comment'], str) or not data['comment'].strip():
         abort(400, description="Comment must be a non-empty string")
@@ -76,22 +76,24 @@ class PlaceReviewList(Resource):
         if not user:
             abort(404, description="User not found")
         
-        print(f"Debug: place.host_id = {place.host_id}, user.id = {user.id}")
-        # Ensure the user is not reviewing their own listing
-        if place.host_id == user.id:
-            abort(400, description="Hosts cannot review their own listings")
+        try:
+            # Ensure the host cannot review their own listing
+            if place.host_id == user.id:
+                raise ValueError("A host cannot review their own listing")
         
-        # Create the review
-        review = Review(
-            place_id=data['place_id'],
-            user_id=data['user_id'],
-            rating=data['rating'],
-            comment=data['comment']
-        )
+            # Create the review
+            review = Review(
+                place_id=data['place_id'],
+                user_id=data['user_id'],
+                rating=data['rating'],
+                comment=data['comment']
+            )
 
-        place.add_review(review)
-        user.add_review(review)
-        return review.to_dict(), 201
+            place.add_review(review)
+            user.add_review(review)
+            return review.to_dict(), 201
+        except ValueError as e:
+            abort(400, description=str(e))
 
 @ns_review.route('/users/<string:user_id>/reviews')
 class UserReviewList(Resource):

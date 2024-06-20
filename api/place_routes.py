@@ -95,6 +95,9 @@ class PlaceList(Resource):
             abort(400, description="Request payload must be JSON")
         data = request.json
         validate_place_data(data)
+
+        if place.host_id and place.host_id != data['host_id']: # Check if the place already has a host 
+            abort(400, description="Listing already has a host")
         
         # Create a new Place object from the request data
         place = Place( 
@@ -111,8 +114,6 @@ class PlaceList(Resource):
             max_guests=data['max_guests'],
             amenity_ids=data['amenity_ids']
         )
-        if place.host_id and place.host_id != data['host_id']: # Check if the place already has a host 
-            abort(400, description="Listing already has a host")
 
         host = User.load(place.host_id)
         if host:
@@ -153,13 +154,16 @@ class PlaceResource(Resource):
         place = Place.load(place_id)
         if not place:
             abort(404, description="Place not found")
-        if data.get('host_id') and place.host_id and place.host_id != data['host_id']: # Check if the place already has a host
-            abort(400, description="Listing already has a host")
+        
         if not request.json:
             abort(400, description="Request payload must be JSON")
 
         data = request.json
         validate_place_data(data)
+
+        if data.get('host_id') and place.host_id and place.host_id != data['host_id']: # Check if the place already has a host
+            abort(400, description="Listing already has a host")
+
         # Update the place with the new data
         place.update_details(
             name=data['name'],
