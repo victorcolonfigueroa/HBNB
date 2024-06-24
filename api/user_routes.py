@@ -14,8 +14,8 @@ user_model = ns_user.model('User', {
     'email': fields.String(required=True, description='The user email'),
     'first_name': fields.String(required=True, description='The user first name'),
     'last_name': fields.String(required=True, description='The user last name'),
-    'city_id': fields.String(description='The city ID the user is associated with'),
-    'country_code': fields.String(description='The country code the user is associated with'),
+    'city_id': fields.String(required=False, description='The city ID the user is associated with'),
+    'country_code': fields.String(required=False, description='The country code the user is associated with'),
     'created_at': fields.DateTime(readOnly=True, description='The date and time the user was created'),
     'updated_at': fields.DateTime(readOnly=True, description='The date and time the user was last updated'),
     'places': fields.List(fields.Nested(ns_user.model('Place', {
