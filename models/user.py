@@ -9,7 +9,7 @@ class User(BaseModel):
 
     user_email = {} # class variable to store email to user mapping
 
-    def __init__(self, email, password, first_name, last_name, city_id=None, country_code=None, *args, **kwargs):
+    def __init__(self, email, first_name, last_name, city_id=None, country_code=None, *args, **kwargs):
         """
         Initialize the User with an email, password, first name, last name, optional city ID, optional country ID, and optional arguments.
 
@@ -24,7 +24,6 @@ class User(BaseModel):
         """
         super().__init__(*args, **kwargs)
         self.email = email
-        self.password = password
         self.first_name = first_name
         self.last_name = last_name
         self.city_id = city_id
@@ -71,7 +70,7 @@ class User(BaseModel):
             self.save()
             review.save()  
 
-    def update_details(self, email=None, password=None, first_name=None, last_name=None, city_id=None, country_code=None):
+    def update_details(self, email=None, first_name=None, last_name=None, city_id=None, country_code=None):
         """
         Update the details of the user.
 
@@ -84,8 +83,6 @@ class User(BaseModel):
         """
         if email:
             self.email = email
-        if password:
-            self.password = password
         if first_name:
             self.first_name = first_name
         if last_name:

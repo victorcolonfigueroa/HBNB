@@ -12,7 +12,6 @@ ns_user = Namespace('users', description='User operations')
 user_model = ns_user.model('User', {
     'id': fields.String(readOnly=True, description='The unique identifier of a user'),
     'email': fields.String(required=True, description='The user email'),
-    'password': fields.String(required=True, description='The user password'),
     'first_name': fields.String(required=True, description='The user first name'),
     'last_name': fields.String(required=True, description='The user last name'),
     'city_id': fields.String(description='The city ID the user is associated with'),
@@ -70,8 +69,6 @@ def validate_user_data(data):
     """
     if 'email' not in data or not isinstance(data['email'], str) or not data['email'].strip():
         abort(400, description="Email must be a non-empty string")
-    if 'password' not in data or not isinstance(data['password'], str) or not data['password'].strip():
-        abort(400, description="Password must be a non-empty string")
     if 'first_name' not in data or not isinstance(data['first_name'], str) or not data['first_name'].strip():
         abort(400, description="First name must be a non-empty string")
     if 'last_name' not in data or not isinstance(data['last_name'], str) or not data['last_name'].strip():
@@ -117,13 +114,9 @@ class UserList(Resource):
         # Check if the email address is already in use
         if not User.unique_email(data['email']):
             abort(400, description="Email address is already in use")
-        # Hash the password before storing it
-        hashed_password = generate_password_hash(data['password'])
-
         # Create the user
         user = User(
             email=data['email'],
-            password=hashed_password,
             first_name=data['first_name'],
             last_name=data['last_name'],
             city_id=data.get('city_id'),
@@ -173,7 +166,6 @@ class UserResource(Resource):
         validate_user_data(data)
         user.update_details(
             email=data.get('email'),
-            password=data.get('password'),
             first_name=data.get('first_name'),
             last_name=data.get('last_name'),
             city_id=data.get('city_id'),

@@ -95,9 +95,6 @@ class PlaceList(Resource):
             abort(400, description="Request payload must be JSON")
         data = request.json
         validate_place_data(data)
-
-        if place.host_id and place.host_id != data['host_id']: # Check if the place already has a host 
-            abort(400, description="Listing already has a host")
         
         # Create a new Place object from the request data
         place = Place( 
