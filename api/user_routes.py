@@ -163,14 +163,13 @@ class UserResource(Resource):
             abort(400, description="Request payload must be JSON")
 
         data = request.json
-        validate_user_data(data)
-        user.update_details(
-            email=data.get('email'),
-            first_name=data.get('first_name'),
-            last_name=data.get('last_name'),
-            city_id=data.get('city_id'),
-            country_code=data.get('country_code', user.country_code)
-        )
+        
+        for key in data.keys():
+            if hasattr(user, key):
+                setattr(user, key, data[key])
+
+        user.save()
+
         return user.to_dict()
 
     @ns_user.doc('delete_user')

@@ -156,26 +156,16 @@ class PlaceResource(Resource):
             abort(400, description="Request payload must be JSON")
 
         data = request.json
-        validate_place_data(data)
 
         if data.get('host_id') and place.host_id and place.host_id != data['host_id']: # Check if the place already has a host
             abort(400, description="Listing already has a host")
 
-        # Update the place with the new data
-        place.update_details(
-            name=data['name'],
-            description=data['description'],
-            address=data['address'],
-            city_id=data['city_id'],
-            latitude=data['latitude'],
-            longitude=data['longitude'],
-            host_id=data['host_id'],
-            number_of_rooms=data['number_of_rooms'],
-            number_of_bathrooms=data['number_of_bathrooms'],
-            price_per_night=data['price_per_night'],
-            max_guests=data['max_guests'],
-            amenity_ids=data['amenity_ids']
-        )
+        # Only update the fields that are present in the request data
+        for key in data.keys():
+            if hasattr(place, key):
+                setattr(place, key, data[key])
+
+        place.save()
         return place.to_dict()
 
     @ns_place.doc('delete_place')
