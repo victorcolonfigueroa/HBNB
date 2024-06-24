@@ -4,7 +4,7 @@ from models.review import Review
 from models.place import Place
 from models.user import User
 
-ns_review = Namespace('reviews', description='Review operations')
+ns_review = Namespace('', description='Review operations')
 
 # Define the model for a review
 review_model = ns_review.model('Review', {
